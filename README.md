@@ -54,7 +54,7 @@ This project is developed using **Next.js 14+** with the modern App Router archi
 
 1. **Clone the Repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/wuya51/netrum-dashboard.git
    cd netrum-dashboard
    ```
 
