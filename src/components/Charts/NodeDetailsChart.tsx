@@ -29,10 +29,7 @@ const NodeDetailsChart: React.FC<NodeDetailsChartProps> = ({
     { name: 'Cooldown', value: inCooldown ? 1 : 0, color: '#ef4444' }
   ];
 
-  const rewardData = [
-    { name: 'Total Rewards', value: totalRewards, color: '#8b5cf6' },
-    { name: 'Claimable', value: claimableAmount, color: '#06b6d4' }
-  ];
+
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

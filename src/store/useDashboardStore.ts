@@ -12,6 +12,19 @@ type NodeData = {
   log: any;
 };
 
+type ActiveNode = {
+  id?: string;
+  nodeId?: string;
+  address?: string;
+  wallet?: string;
+  walletAddress?: string;
+  status?: any;
+  nodeStatus?: any;
+  taskCount?: number;
+  lastPolledAt?: string;
+  lastUpdated?: string;
+};
+
 type DashboardState = {
   networkStats: any | null;
   activeNodes: any[] | null;
@@ -45,7 +58,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   findNodeById: (nodeId: string) => {
     const nodes = get().activeNodes || [];
-    return nodes.find(node => 
+    return nodes.find((node: ActiveNode) => 
       (node.nodeId && node.nodeId.toLowerCase() === nodeId.toLowerCase()) ||
       (node.id && node.id.toLowerCase() === nodeId.toLowerCase())
     ) || null;
@@ -53,7 +66,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
   findNodeByAddress: (address: string) => {
     const nodes = get().activeNodes || [];
-    return nodes.find(node => 
+    return nodes.find((node: ActiveNode) => 
       (node.wallet && node.wallet.toLowerCase() === address.toLowerCase()) ||
       (node.address && node.address.toLowerCase() === address.toLowerCase())
     ) || null;
@@ -67,8 +80,8 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         NetrumAPI.getActiveNodes(),
       ]);
       set({ networkStats: stats, activeNodes: nodes, loading: false, lastUpdated: new Date() });
-    } catch (err: any) {
-      set({ error: err.message || 'Failed to load network data', loading: false });
+    } catch (_: any) {
+      set({ error: 'Failed to load network data', loading: false });
     }
   },
 
@@ -95,7 +108,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
             const nodes = Array.isArray(activeNodes) ? activeNodes : 
                          (activeNodes?.nodes) ? activeNodes.nodes : [];
             
-            const matchedNode = nodes.find(node => 
+            const matchedNode = nodes.find((node: ActiveNode) => 
               (node.nodeId && node.nodeId.toLowerCase() === finalNodeId.toLowerCase()) ||
               (node.id && node.id.toLowerCase() === finalNodeId.toLowerCase())
             );
@@ -104,7 +117,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
               finalAddress = matchedNode.wallet || matchedNode.address || '';
 
             }
-          } catch (err) {
+          } catch (_) {
 
           }
         }
@@ -120,7 +133,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
             const nodes = Array.isArray(activeNodes) ? activeNodes : 
                          (activeNodes?.nodes) ? activeNodes.nodes : [];
             
-            const matchedNode = nodes.find(node => 
+            const matchedNode = nodes.find((node: ActiveNode) => 
               (node.wallet && node.wallet.toLowerCase() === finalAddress!.toLowerCase()) ||
               (node.address && node.address.toLowerCase() === finalAddress!.toLowerCase())
             );
@@ -129,7 +142,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
               finalNodeId = matchedNode.nodeId || matchedNode.id || '';
 
             }
-          } catch (err) {
+          } catch (_) {
 
           }
         }
@@ -137,15 +150,15 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       const promises = [];
       if (finalNodeId) {
         promises.push(
-          NetrumAPI.getNodeStatus(finalNodeId).catch(err => {
+          NetrumAPI.getNodeStatus(finalNodeId).catch(_ => {
 
             return null;
           }),
-          NetrumAPI.getMiningStatus(finalNodeId).catch(err => {
+          NetrumAPI.getMiningStatus(finalNodeId).catch(_ => {
 
             return null;
           }),
-          NetrumAPI.getCooldown(finalNodeId).catch(err => {
+          NetrumAPI.getCooldown(finalNodeId).catch(_ => {
 
             return null;
           })
@@ -155,10 +168,10 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       }
       if (finalAddress) {
         promises.push(
-          NetrumAPI.getClaimStatus(finalAddress).catch(err => {
+          NetrumAPI.getClaimStatus(finalAddress).catch(_ => {
             return null;
           }),
-          NetrumAPI.getLiveLog(finalAddress).catch(err => {
+          NetrumAPI.getLiveLog(finalAddress).catch(_ => {
             return null;
           })
         );
@@ -183,9 +196,9 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         error: null
       });
       
-    } catch (err: any) {
+    } catch (_: any) {
       set({ 
-        error: err.message || 'Failed to load node details',
+        error: 'Failed to load node details',
         loading: false,
         selectedNode: null
       });

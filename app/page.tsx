@@ -11,14 +11,14 @@ import ActiveNodesSection from '../src/components/ActiveNodesSection'
 import ThemeToggle from '../src/components/ThemeToggle'
 
 export default function HomePage() {
-  const { networkStats, loadNetworkOverview, error, clearError } = useDashboardStore()
+  const { loadNetworkOverview, error, clearError } = useDashboardStore()
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [urlSearchParam, setUrlSearchParam] = useState('')
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   const [cooldownActive, setCooldownActive] = useState(false)
-  const [searchCooldown, setSearchCooldown] = useState<Record<string, number>>({})
+  const [, setSearchCooldown] = useState<Record<string, number>>({})
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
   const [registrationStatus, setRegistrationStatus] = useState<any>(null)
   const [registrationLoading, setRegistrationLoading] = useState(true)
@@ -110,8 +110,10 @@ export default function HomePage() {
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="flex items-center space-x-4">
-            <img src="/logo.png" alt="Netrum Logo" className="h-8 w-8" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Netrum Node Dashboard</h1>
+            <a href="/" className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity">
+              <img src="/logo.png" alt="Netrum Logo" className="h-8 w-8" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Netrum Node Dashboard</h1>
+            </a>
           </div>
           <div className="mt-4 md:mt-0 flex flex-wrap justify-end items-center gap-2 md:gap-4">
             <label className="flex items-center text-sm text-gray-700 dark:text-gray-300">
@@ -140,7 +142,7 @@ export default function HomePage() {
 
         <div className="space-y-2">
           <NodeSearch initialSearchValue={urlSearchParam} />
-          <NetworkOverview stats={networkStats} />
+          <NetworkOverview />
           <ActiveNodesSection onNodeClick={handleNodeClick} cooldownActive={cooldownActive} />
         </div>
       </main>

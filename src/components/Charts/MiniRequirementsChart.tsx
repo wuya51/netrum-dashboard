@@ -24,16 +24,7 @@ interface MiniRequirementsChartProps {
   };
 }
 
-const getBarColor = (name: string) => {
-  const colorMap: { [key: string]: string } = {
-    'RAM': '#3b82f6', 
-    'CPU Cores': '#10b981',
-    'Storage': '#f59e0b',
-    'Download Speed': '#ef4444',
-    'Upload Speed': '#8b5cf6'
-  };
-  return colorMap[name] || '#6b7280';
-};
+
 
 export default function MiniRequirementsChart({ requirements }: MiniRequirementsChartProps) {
   if (!requirements) return null;
@@ -94,7 +85,6 @@ export default function MiniRequirementsChart({ requirements }: MiniRequirements
           />
           <Tooltip 
             content={<CustomTooltip />}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs focus:outline-none focus:ring-0"
             isAnimationActive={false}
           />
           <Bar 
@@ -102,10 +92,6 @@ export default function MiniRequirementsChart({ requirements }: MiniRequirements
             radius={[0, 4, 4, 0]}
             barSize={16}
             isAnimationActive={false}
-            activeBar={false}
-            activeIndex={-1}
-            onMouseEnter={() => {}}
-            onMouseLeave={() => {}}
           >
             {chartData.map((entry, index) => (
               <Cell 

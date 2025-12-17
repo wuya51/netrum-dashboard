@@ -4,6 +4,19 @@ interface ExportButtonProps {
   activeNodesData?: any;
 }
 
+interface ExportableNode {
+  address?: string;
+  walletAddress?: string;
+  wallet?: string;
+  id?: string;
+  nodeId?: string;
+  status?: string;
+  nodeStatus?: string;
+  taskCount?: number;
+  lastPolledAt?: string;
+  lastUpdated?: string;
+}
+
 export default function ExportButton({ activeNodesData }: ExportButtonProps) {
   const { networkStats, activeNodes: storeActiveNodes } = useDashboardStore();
   
@@ -21,7 +34,7 @@ export default function ExportButton({ activeNodesData }: ExportButtonProps) {
     const headers = ['Address', 'Node ID', 'Status', 'Task Count', 'Last Polled'];
     const csvContent = [
       headers.join(','),
-      ...nodesArray.map(node => [
+      ...nodesArray.map((node: ExportableNode) => [
         node.address || node.walletAddress || node.wallet || '',
         node.id || node.nodeId || '',
         node.status || node.nodeStatus || '',
@@ -65,8 +78,7 @@ export default function ExportButton({ activeNodesData }: ExportButtonProps) {
   };
 
   const getExportableNodes = () => {
-    console.log('Getting exportable nodes:', activeNodes);
-    
+   
     if (!activeNodes) return null;
 
     if (Array.isArray(activeNodes)) {

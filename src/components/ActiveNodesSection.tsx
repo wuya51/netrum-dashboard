@@ -26,7 +26,7 @@ const ActiveNodesDisplay: React.FC<ActiveNodesDisplayProps> = ({ result, onClear
   const [nodesPerPage, setNodesPerPage] = useState(25);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const popupRef = useRef<HTMLDivElement>(null);
-  const nodes = result.nodes || result.data?.nodes || result.data || result.sample || [];
+  const nodes = result.nodes || result.data || result.sample || [];
 
   
   const totalPages = Math.ceil(nodes.length / nodesPerPage);
@@ -85,9 +85,11 @@ const ActiveNodesDisplay: React.FC<ActiveNodesDisplayProps> = ({ result, onClear
           ❌ {result.message}
         </div>
         
-        <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          {retryCount < 5 ? `Auto-retrying in a few seconds... (Attempt ${retryCount + 1}/5)` : 'Maximum retry attempts reached'}
-        </div>
+        {retryCount >= 3 && (
+          <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            Maximum retry attempts reached
+          </div>
+        )}
       </div>
     );
   }
@@ -102,7 +104,7 @@ const ActiveNodesDisplay: React.FC<ActiveNodesDisplayProps> = ({ result, onClear
           </p>
         </div>
         <div className="flex gap-2">
-          <ExportButton data={nodes} />
+          <ExportButton activeNodesData={nodes} />
         </div>
       </div>
       
@@ -121,7 +123,7 @@ const ActiveNodesDisplay: React.FC<ActiveNodesDisplayProps> = ({ result, onClear
             </tr>
           </thead>
           <tbody>
-            {currentNodes.map((node, index) => (
+            {currentNodes.map((node: any, index: number) => (
               <tr 
                 key={node.nodeId || node.id || node._id || index} 
                 className={`hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-800 dark:hover:to-blue-900 transition-all duration-300 border-b border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 ${cooldownActive ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
@@ -354,13 +356,36 @@ export default function ActiveNodesSection({ onNodeClick, cooldownActive }: Acti
       });
       setRetryCount(0);
     } catch (error: any) {
-
-      setActiveNodesResult({
-        success: false,
-        message: error.message || 'Failed to load active nodes',
-        nodes: [],
-        data: []
-      });
+      const nextRetryCount = retryCount + 1;
+      
+      if (error.message && (error.message.includes('timeout') || error.message.includes('Server took too long'))) {
+        if (nextRetryCount <= 3) {
+          console.log(`🔄 Auto retrying active nodes load (${nextRetryCount}/3)...`);
+          setRetryCount(nextRetryCount);
+          setTimeout(() => {
+            loadActiveNodes();
+          }, 2000);
+          return;
+        } else {
+          setActiveNodesResult({
+            success: false,
+            message: 'Request timeout after 3 attempts. Please try again later.',
+            nodes: [],
+            data: []
+          });
+        }
+      } else {
+        setActiveNodesResult({
+          success: false,
+          message: error.message || 'Failed to load active nodes',
+          nodes: [],
+          data: []
+        });
+      }
+      
+      if (nextRetryCount > 3) {
+        setRetryCount(nextRetryCount);
+      }
     } finally {
       setActiveNodesLoading(false);
     }

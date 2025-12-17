@@ -1,37 +1,119 @@
 
 import { useEffect, useState } from 'react';
-import { useDashboardStore } from '../store/useDashboardStore';
 import { NetrumAPI } from '../api/netrumApi';
 import MiniNodeStatusChart from './Charts/MiniNodeStatusChart';
 import MiniRequirementsChart from './Charts/MiniRequirementsChart';
 
+const GLOBAL_CACHE_PREFIX = 'netrum_global_cache_';
+
+const getGlobalCache = <T,>(key: string): T | null => {
+  try {
+    const cached = localStorage.getItem(`${GLOBAL_CACHE_PREFIX}${key}`);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setGlobalCache = <T,>(key: string, data: T, ttl: number = 30000) => {
+  try {
+    const cacheData = {
+      data,
+      timestamp: Date.now(),
+      ttl
+    };
+    localStorage.setItem(`${GLOBAL_CACHE_PREFIX}${key}`, JSON.stringify(cacheData));
+  } catch {
+  }
+};
+
+const isCacheValid = (cacheData: any): boolean => {
+  if (!cacheData || !cacheData.timestamp) return false;
+  return Date.now() - cacheData.timestamp < (cacheData.ttl || 30000);
+};
+
 export default function NetworkOverview() {
-  const { activeNodes } = useDashboardStore();
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [systemRequirements, setSystemRequirements] = useState<any>(null);
   const [serviceLoading, setServiceLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [cachedData, setCachedData] = useState<{
+    serviceStatus: any;
+    systemRequirements: any;
+    timestamp: number;
+  } | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    let intervalId: NodeJS.Timeout;
+
     const loadNetworkStats = async () => {
-      setServiceLoading(true);
+      if (!isMounted) return;
+      
+      const globalCacheKey = 'network_stats';
+      const globalCache = getGlobalCache<any>(globalCacheKey);
+      const hasLocalCachedData = cachedData && (Date.now() - cachedData.timestamp < 30000);
+      const hasValidGlobalCache = globalCache && isCacheValid(globalCache);
+      
+      if (hasLocalCachedData || hasValidGlobalCache) {
+        const dataToUse = hasValidGlobalCache ? globalCache.data : cachedData;
+        setServiceStatus(dataToUse?.serviceStatus || null);
+        setSystemRequirements(dataToUse?.systemRequirements || null);
+        setIsUpdating(true);
+        
+        if (hasValidGlobalCache && !hasLocalCachedData) {
+          setCachedData(dataToUse);
+        }
+      } else {
+        setServiceLoading(true);
+      }
+      
       try {
         const [stats, requirements] = await Promise.all([
           NetrumAPI.getNetworkStats(),
           NetrumAPI.getRequirements()
         ]);
+        
+        if (!isMounted) return;
+        
+        const newCachedData = {
+          serviceStatus: stats,
+          systemRequirements: requirements,
+          timestamp: Date.now()
+        };
+        
+        setCachedData(newCachedData);
         setServiceStatus(stats);
         setSystemRequirements(requirements);
+        setGlobalCache(globalCacheKey, newCachedData, 30000);
       } catch (error) {
-
-        setServiceStatus(null);
-        setSystemRequirements(null);
+        if (!isMounted) return;
+        
+        if (!hasLocalCachedData && !hasValidGlobalCache) {
+          setServiceStatus(null);
+          setSystemRequirements(null);
+        }
       } finally {
-        setServiceLoading(false);
+        if (isMounted) {
+          setServiceLoading(false);
+          setIsUpdating(false);
+        }
       }
     };
 
     loadNetworkStats();
-  }, []);
+    
+    intervalId = setInterval(() => {
+      if (isMounted && !serviceLoading && !isUpdating) {
+        loadNetworkStats();
+      }
+    }, 30000);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [serviceLoading, isUpdating]);
 
   const formatTimestamp = (timestamp: string) => {
     try {
@@ -70,7 +152,7 @@ export default function NetworkOverview() {
   const syncBuffer = systemRequirements?.syncBuffer;
   const effectiveCooldown = systemRequirements?.effectiveCooldown;
 
-  if (serviceLoading) {
+  if (serviceLoading && !cachedData) {
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
@@ -90,8 +172,13 @@ export default function NetworkOverview() {
         {isSuccess ? (
           <div>
             <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Service Status</h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Service Status</h3>
+                {isUpdating && (
+                  <div className="w-4 h-4 border border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <span>Last Update: </span>
                 <span className="font-medium text-xs">{formatTimestamp(timestamp)}</span>
               </div>
@@ -160,7 +247,14 @@ export default function NetworkOverview() {
           </div>
         ) : (
           <div className="text-center p-8 text-gray-600 dark:text-gray-400">
-            Loading service status...
+            {cachedData ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                Updating service status...
+              </div>
+            ) : (
+              'Failed to load service status'
+            )}
           </div>
         )}
       </div>

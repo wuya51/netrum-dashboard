@@ -33,7 +33,7 @@ export default function MiniNodeStatusChart({ activeNodes, inactiveNodes, totalN
               startAngle={90}
               endAngle={-270}
             >
-              {data.map((entry, index) => (
+              {data.map((_, index) => (
                 <Cell 
                   key={`cell-${index}`} 
                   fill={COLORS[index % COLORS.length]}
