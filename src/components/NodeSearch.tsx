@@ -33,6 +33,8 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
   const [cooldownActive, setCooldownActive] = useState<boolean>(false);
   const [cachedActiveNodes, setCachedActiveNodes] = useState<any[]>([]);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [lastSearchInput, setLastSearchInput] = useState<string>('');
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('nodeSearchHistory');
@@ -70,12 +72,12 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
     }
   }, [initialSearchValue]);
 
-  const handleSearch = async (searchInput: string) => {
+  const handleSearch = async (searchInput: string, isRetry: boolean = false) => {
     if (!searchInput.trim()) return;
     
     const now = Date.now();
     const lastSearchTime = searchCooldown[searchInput.toLowerCase()];
-    if (lastSearchTime && now - lastSearchTime < 30000) {
+    if (lastSearchTime && now - lastSearchTime < 30000 && !isRetry) {
       const remainingSeconds = Math.ceil((30000 - (now - lastSearchTime)) / 1000);
       setCooldownRemaining(remainingSeconds);
       setCooldownActive(true);
@@ -84,11 +86,17 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
     
     setLoading(true);
     setError(null);
-    setNodeDetails(null);
+    if (!isRetry) {
+      setNodeDetails(null);
+      setRetryCount(0);
+    }
     setShowHistory(false);
+    setLastSearchInput(searchInput);
 
     try {
-      addToHistory(searchInput);
+      if (!isRetry) {
+        addToHistory(searchInput);
+      }
       
       const isAddress = /^0x[a-fA-F0-9]{40}$/.test(searchInput);
 
@@ -98,22 +106,34 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
         await loadNodeDetails(searchInput, '');
       }
       
-      setSearchCooldown(prev => ({
-        ...prev,
-        [searchInput.toLowerCase()]: now
-      }));
+      if (!isRetry) {
+        setSearchCooldown(prev => ({
+          ...prev,
+          [searchInput.toLowerCase()]: now
+        }));
+        
+        setCooldownActive(true);
+        setCooldownRemaining(30);
+      }
       
-      setCooldownActive(true);
-      setCooldownRemaining(30);
+      setRetryCount(0);
     } catch (err: any) {
       if (err.message && err.message.includes('Rate limit')) {
         setError('Search is temporarily blocked. Please wait 30 seconds before searching again.');
       } else if (err.message && err.message.includes('timeout') || err.message && err.message.includes('Server took too long')) {
+        setError(`Request timeout. Please try again. (Retry ${retryCount}/3)`);
       } else {
-        setError(err.message || 'Failed to search node. Please check the console for details.');
+        setError(`${err.message || 'Failed to search node'} (Retry ${retryCount}/3)`);
       }
+      setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    if (lastSearchInput && retryCount < 3) {
+      handleSearch(lastSearchInput, true);
     }
   };
 
@@ -196,8 +216,10 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       });
     } catch (err: any) {
       if (err.message && err.message.includes('timeout') || err.message && err.message.includes('Server took too long')) {
+        throw err;
       } else {
         setError(err.message || 'Failed to load node details');
+        throw err;
       }
     }
   };
@@ -235,8 +257,10 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       }
     } catch (err: any) {
       if (err.message && err.message.includes('timeout') || err.message && err.message.includes('Server took too long')) {
+        throw err;
       } else {
         setError(`Failed to load address details: ${err.message}`);
+        throw err;
       }
     }
   };
@@ -363,8 +387,25 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       
       {error && (
         <div className="mt-4 px-4 py-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
+          <div className="flex justify-between items-center">
+            <span>{error}</span>
+            <div className="flex gap-2">
+              {retryCount < 3 && (
+                <button 
+                  onClick={handleRetry}
+                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                >
+                  Retry ({retryCount}/3)
+                </button>
+              )}
+              <button 
+                onClick={() => setError(null)} 
+                className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
         </div>
       )}
       
