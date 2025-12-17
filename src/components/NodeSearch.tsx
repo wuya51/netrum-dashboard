@@ -147,8 +147,21 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
   const loadNodeDetails = async (nodeId: string, nodeAddress: string) => {
     try {
       let resolvedAddress = nodeAddress;
-      if (!resolvedAddress && cachedActiveNodes.length > 0) {
-        const matchedNode = cachedActiveNodes.find(node => 
+      if (!resolvedAddress) {
+        let searchNodes = cachedActiveNodes;
+        if (searchNodes.length === 0) {
+          const activeNodes = await NetrumAPI.getActiveNodes();
+          if (Array.isArray(activeNodes)) {
+            searchNodes = activeNodes;
+          } else if (activeNodes && activeNodes.nodes && Array.isArray(activeNodes.nodes)) {
+            searchNodes = activeNodes.nodes;
+          } else if (activeNodes && activeNodes.data && Array.isArray(activeNodes.data)) {
+            searchNodes = activeNodes.data;
+          }
+          setCachedActiveNodes(searchNodes);
+        }
+        
+        const matchedNode = searchNodes.find(node => 
           (node.nodeId && node.nodeId.toLowerCase() === nodeId.toLowerCase()) ||
           (node.id && node.id.toLowerCase() === nodeId.toLowerCase())
         );
