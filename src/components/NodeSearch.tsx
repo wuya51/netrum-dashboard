@@ -35,6 +35,8 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
   const [cachedActiveNodes, setCachedActiveNodes] = useState<any[]>([]);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [lastSearchInput, setLastSearchInput] = useState<string>('');
+  const [cachedNodeData, setCachedNodeData] = useState<Record<string, NodeDetails>>({});
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('nodeSearchHistory');
@@ -84,12 +86,20 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       return;
     }
     
-    setLoading(true);
-    setError(null);
-    if (!isRetry) {
-      setNodeDetails(null);
-      setRetryCount(0);
+    const hasCachedData = cachedNodeData[searchInput.toLowerCase()];
+    
+    if (hasCachedData && !isRetry) {
+      setIsUpdating(true);
+      setNodeDetails(hasCachedData);
+    } else {
+      setLoading(true);
+      if (!isRetry) {
+        setNodeDetails(null);
+        setRetryCount(0);
+      }
     }
+    
+    setError(null);
     setShowHistory(false);
     setLastSearchInput(searchInput);
 
@@ -100,10 +110,18 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       
       const isAddress = /^0x[a-fA-F0-9]{40}$/.test(searchInput);
 
+      let result: NodeDetails | null = null;
       if (isAddress) {
-        await loadAddressDetails(searchInput);
+        result = await loadAddressDetails(searchInput);
       } else {
-        await loadNodeDetails(searchInput, '');
+        result = await loadNodeDetails(searchInput, '');
+      }
+      
+      if (result) {
+        setCachedNodeData(prev => ({
+          ...prev,
+          [searchInput.toLowerCase()]: result
+        }));
       }
       
       if (!isRetry) {
@@ -128,6 +146,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
+      setIsUpdating(false);
     }
   };
 
@@ -164,7 +183,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
     setShowHistory(false);
   };
 
-  const loadNodeDetails = async (nodeId: string, nodeAddress: string) => {
+  const loadNodeDetails = async (nodeId: string, nodeAddress: string): Promise<NodeDetails> => {
     try {
       let resolvedAddress = nodeAddress;
       if (!resolvedAddress) {
@@ -205,7 +224,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
         setCooldownActive(true);
       }
 
-      setNodeDetails({
+      const nodeDetails = {
         id: nodeId,
         address: resolvedAddress,
         status: nodeStats,
@@ -213,7 +232,10 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
         cooldown,
         claim,
         log,
-      });
+      };
+
+      setNodeDetails(nodeDetails);
+      return nodeDetails;
     } catch (err: any) {
       if (err.message && err.message.includes('timeout') || err.message && err.message.includes('Server took too long')) {
         throw err;
@@ -224,13 +246,13 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
     }
   };
 
-  const loadAddressDetails = async (nodeAddress: string) => {
+  const loadAddressDetails = async (nodeAddress: string): Promise<NodeDetails> => {
     try {
       const possibleNodeIds = await findPossibleNodeIds(nodeAddress);
       
       if (possibleNodeIds.length > 0) {
         const nodeId = possibleNodeIds[0];
-        await loadNodeDetails(nodeId, nodeAddress);
+        return await loadNodeDetails(nodeId, nodeAddress);
       } else {
         let claim = null;
         let log = null;
@@ -245,7 +267,8 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
         if (logResult.status === 'fulfilled') {
           log = logResult.value;
         }
-        setNodeDetails({
+        
+        const nodeDetails = {
           id: '',
           address: nodeAddress,
           status: null,
@@ -253,7 +276,10 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
           cooldown: null,
           claim,
           log,
-        });
+        };
+        
+        setNodeDetails(nodeDetails);
+        return nodeDetails;
       }
     } catch (err: any) {
       if (err.message && err.message.includes('timeout') || err.message && err.message.includes('Server took too long')) {
@@ -377,12 +403,12 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       
 
       <div className="mt-4 space-y-2">
-        {loading && (
-          <div className="flex items-center px-4 py-3 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
-            Loading data...
-          </div>
-        )}        
+        {(loading || isUpdating) && (
+        <div className="flex items-center px-4 py-3 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg">
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+          {isUpdating ? 'Updating data...' : 'Loading data...'}
+        </div>
+      )}        
       </div>
       
       {error && (
