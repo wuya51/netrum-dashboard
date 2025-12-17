@@ -4,6 +4,9 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Netrum Node Dashboard',
   description: 'Netrum Node Management Dashboard',
+  icons: {
+    icon: '/logo.ico',
+  },
 }
 
 export default function RootLayout({

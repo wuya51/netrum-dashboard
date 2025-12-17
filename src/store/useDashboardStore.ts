@@ -156,11 +156,9 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       if (finalAddress) {
         promises.push(
           NetrumAPI.getClaimStatus(finalAddress).catch(err => {
-            console.warn('Failed to load claim status:', err);
             return null;
           }),
           NetrumAPI.getLiveLog(finalAddress).catch(err => {
-            console.warn('Failed to load live log:', err);
             return null;
           })
         );
@@ -186,7 +184,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       });
       
     } catch (err: any) {
-      console.error('Error loading node details:', err);
       set({ 
         error: err.message || 'Failed to load node details',
         loading: false,
