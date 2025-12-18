@@ -247,15 +247,6 @@ const [apiConnectionStatus, setApiConnectionStatus] = useState<'online' | 'offli
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 w-full">
-        {error && (
-          <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md mb-0.5 flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={clearError} className="text-red-700 hover:text-red-900 underline">
-              Dismiss
-            </button>
-          </div>
-        )}
-
         <div className="space-y-2">
           <NodeSearch initialSearchValue={urlSearchParam} />
           <NetworkOverview />

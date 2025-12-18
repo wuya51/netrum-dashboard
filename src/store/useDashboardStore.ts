@@ -73,7 +73,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   },
 
   loadNetworkOverview: async () => {
-    set({ loading: true, error: null });
+    set({ loading: true });
     try {
       const [stats, nodes] = await Promise.all([
         NetrumAPI.getNetworkStats(),
@@ -81,7 +81,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
       ]);
       set({ networkStats: stats, activeNodes: nodes, loading: false, lastUpdated: new Date() });
     } catch (_: any) {
-      set({ error: 'Failed to load network data', loading: false });
+      set({ loading: false });
     }
   },
 

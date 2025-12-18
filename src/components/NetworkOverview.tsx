@@ -253,7 +253,10 @@ export default function NetworkOverview() {
                 Updating service status...
               </div>
             ) : (
-              'Failed to load service status'
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                Loading service status...
+              </div>
             )}
           </div>
         )}

@@ -23,12 +23,19 @@ export async function fetchWithRateLimit(endpoint: string): Promise<any> {
   }
 
   try {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const timeoutDuration = isMobile ? 60_000 : 30_000;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
     
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      signal: controller.signal
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      mode: 'cors'
     });
     
     clearTimeout(timeoutId);

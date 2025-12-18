@@ -316,11 +316,16 @@ export default function ActiveNodesSection({ onNodeClick, cooldownActive }: Acti
   const [activeNodesLoading, setActiveNodesLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
 
-  const loadActiveNodes = async () => {
-
-    setActiveNodesLoading(true);
+  const loadActiveNodes = async (isRetry: boolean = false) => {
+    if (!isRetry) {
+      setActiveNodesLoading(true);
+    }
+    
     try {
+      console.log('🔄 Loading active nodes...');
       const result = await NetrumAPI.getActiveNodes();
+      console.log('✅ Active nodes API response:', result);
+      
       let nodes: any[] = [];
       let success = false;
       let message = '';
@@ -336,6 +341,10 @@ export default function ActiveNodesSection({ onNodeClick, cooldownActive }: Acti
           message = `${nodes.length} nodes activated`;
         } else if (result.data && Array.isArray(result.data)) {
           nodes = result.data;
+          success = true;
+          message = `${nodes.length} nodes activated`;
+        } else if (result.sample && Array.isArray(result.sample)) {
+          nodes = result.sample;
           success = true;
           message = `${nodes.length} nodes activated`;
         } else {
@@ -357,14 +366,15 @@ export default function ActiveNodesSection({ onNodeClick, cooldownActive }: Acti
       setRetryCount(0);
     } catch (error: any) {
       const nextRetryCount = retryCount + 1;
+      console.error('❌ Error loading active nodes:', error);
       
       if (error.message && (error.message.includes('timeout') || error.message.includes('Server took too long'))) {
         if (nextRetryCount <= 3) {
           console.log(`🔄 Auto retrying active nodes load (${nextRetryCount}/3)...`);
           setRetryCount(nextRetryCount);
           setTimeout(() => {
-            loadActiveNodes();
-          }, 2000);
+            loadActiveNodes(true);
+          }, 3000);
           return;
         } else {
           setActiveNodesResult({
@@ -374,6 +384,13 @@ export default function ActiveNodesSection({ onNodeClick, cooldownActive }: Acti
             data: []
           });
         }
+      } else if (error.message && error.message.includes('Rate limit')) {
+        setActiveNodesResult({
+          success: false,
+          message: 'Rate limit exceeded. Please wait before retrying.',
+          nodes: [],
+          data: []
+        });
       } else {
         setActiveNodesResult({
           success: false,

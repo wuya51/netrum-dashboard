@@ -96,7 +96,6 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
   const [input, setInput] = useState(initialSearchValue);
   const [nodeDetails, setNodeDetails] = useState<NodeDetails | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [searchCooldown, setSearchCooldown] = useState<Record<string, number>>({});
@@ -198,7 +197,6 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       if (isMountedRef.current) {
         setSearchCooldownRemaining(remainingSeconds);
         setSearchCooldownActive(true);
-        setError(`Search cooling down. Please wait ${remainingSeconds} seconds.`);
       }
       return;
     }
@@ -229,7 +227,6 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       }
     }
     
-    setError(null);
     setShowHistory(false);
     setLastSearchInput(searchInput);
 
@@ -280,7 +277,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
     } catch (err: any) {
       const nextRetryCount = retryCount + 1;
       if (err.message && err.message.includes('Rate limit')) {
-        setError('Search is temporarily blocked. Please wait 30 seconds before searching again.');
+        console.log('Search is temporarily blocked. Please wait 30 seconds before searching again.');
       } else if (err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
         if (nextRetryCount <= 3) {
           console.log(`🔄 Auto retrying search (${nextRetryCount}/3)...`);
@@ -290,10 +287,10 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
           }, 2000);
           return;
         } else {
-          setError('Request timeout after 3 attempts. Please try again later.');
+          console.log('Request timeout after 3 attempts. Please try again later.');
         }
       } else {
-        setError(`${err.message || 'Failed to search node'}`);
+        console.log(`${err.message || 'Failed to search node'}`);
       }
       setRetryCount(nextRetryCount);
     } finally {
@@ -506,6 +503,53 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
             return { key: item.key, success: true, result };
           } catch (err: any) {
             console.error(`Error loading ${item.key}:`, err);
+            
+            if (item.key === 'claimHistory') {
+              console.log('⚠️ Claim history API failed, trying alternative nodeId lookup...');
+              
+              try {
+                const activeNodes = await NetrumAPI.getActiveNodes();
+                if (activeNodes && Array.isArray(activeNodes)) {
+                  const foundNode = activeNodes.find((node: any) => 
+                    node.wallet && node.wallet.toLowerCase() === nodeAddress.toLowerCase()
+                  );
+                  
+                  if (foundNode && foundNode.id) {
+                    console.log(`✅ Found nodeId from active nodes: ${foundNode.id}`);
+                    updatedNodeDetails.id = foundNode.id;
+                    
+                    const nodeIdApiCalls = [
+                      { key: 'status', call: () => NetrumAPI.getPollingNodeStats(foundNode.id) },
+                      { key: 'mining', call: () => NetrumAPI.getMiningStatus(foundNode.id) },
+                      { key: 'cooldown', call: () => NetrumAPI.getCooldown(foundNode.id) }
+                    ];
+                    
+                    const nodeIdPromises = nodeIdApiCalls.map(async (nodeItem) => {
+                      try {
+                        updatedLoadingStatus[nodeItem.key as keyof LoadingStatus] = true;
+                        setLoadingStatus({ ...updatedLoadingStatus });
+                        
+                        const nodeResult = await nodeItem.call();
+                        updatedNodeDetails[nodeItem.key as keyof NodeDetails] = nodeResult;
+                        updatedLoadingStatus[nodeItem.key as keyof LoadingStatus] = false;
+                        
+                        setNodeDetails({ ...updatedNodeDetails });
+                        setLoadingStatus({ ...updatedLoadingStatus });
+                      } catch (err: any) {
+                        console.error(`Error loading ${nodeItem.key}:`, err);
+                        updatedLoadingStatus[nodeItem.key as keyof LoadingStatus] = false;
+                        setLoadingStatus({ ...updatedLoadingStatus });
+                      }
+                    });
+                    
+                    await Promise.all(nodeIdPromises);
+                  }
+                }
+              } catch (altErr: any) {
+                console.error('Alternative nodeId lookup also failed:', altErr);
+              }
+            }
+            
             updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
             setLoadingStatus({ ...updatedLoadingStatus });
             return { key: item.key, success: false, error: err };
@@ -523,7 +567,6 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
       if (err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
         throw err;
       } else {
-        setError(`Failed to load address details: ${err.message}`);
         throw err;
       }
     }
@@ -533,7 +576,6 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
 
   const closeNodeDetails = () => {
     setNodeDetails(null);
-    setError(null);
     setShowHistory(false);
   };
 
