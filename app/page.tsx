@@ -94,7 +94,10 @@ const [apiConnectionStatus, setApiConnectionStatus] = useState<'online' | 'offli
       try {
         const response = await fetch('https://node.netrumlabs.dev/', {
           signal: controller.signal,
-          method: 'HEAD'
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
         })
         clearTimeout(timeoutId)
         
@@ -102,14 +105,14 @@ const [apiConnectionStatus, setApiConnectionStatus] = useState<'online' | 'offli
           setApiConnectionStatus('online')
           return true
         } else {
-          setApiConnectionStatus('online')
+          setApiConnectionStatus('offline')
           return false
         }
       } catch (error) {
         clearTimeout(timeoutId)
 
         if (error instanceof Error && error.name === 'AbortError') {
-          setApiConnectionStatus('online')
+          setApiConnectionStatus('offline')
         } else {
           setApiConnectionStatus('offline')
         }
