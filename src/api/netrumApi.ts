@@ -25,7 +25,7 @@ export async function fetchWithRateLimit(endpoint: string): Promise<any> {
   try {
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
     
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       signal: controller.signal

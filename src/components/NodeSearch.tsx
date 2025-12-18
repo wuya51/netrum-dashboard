@@ -104,7 +104,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
   const [searchCooldownActive, setSearchCooldownActive] = useState<boolean>(false);
   const [nodeCooldownRemaining, setNodeCooldownRemaining] = useState<number>(0);
   const [nodeCooldownActive, setNodeCooldownActive] = useState<boolean>(false);
-  const [cachedActiveNodes, setCachedActiveNodes] = useState<any[]>([]);
+
   const [retryCount, setRetryCount] = useState<number>(0);
   const [lastSearchInput, setLastSearchInput] = useState<string>('');
   const [cachedNodeData, setCachedNodeData] = useState<Record<string, NodeDetails>>({});
@@ -334,48 +334,9 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
 
   const loadNodeDetails = async (nodeId: string, nodeAddress: string): Promise<NodeDetails> => {
     try {
-      let resolvedAddress = nodeAddress;
-      
-      if (!resolvedAddress) {
-        let searchNodes = cachedActiveNodes;
-        if (searchNodes.length === 0) {
-          const activeNodes = await NetrumAPI.getActiveNodes();
-          if (Array.isArray(activeNodes)) {
-            searchNodes = activeNodes;
-          } else if (activeNodes && activeNodes.nodes && Array.isArray(activeNodes.nodes)) {
-            searchNodes = activeNodes.nodes;
-          } else if (activeNodes && activeNodes.data && Array.isArray(activeNodes.data)) {
-            searchNodes = activeNodes.data;
-          }
-          setCachedActiveNodes(searchNodes);
-        }
-
-        const matchedNode = searchNodes.find(node => {
-          const nodeIdMatch = (node.nodeId && node.nodeId.toLowerCase() === nodeId.toLowerCase()) ||
-                            (node.id && node.id.toLowerCase() === nodeId.toLowerCase());
-
-          if (nodeIdMatch && (node.wallet || node.address)) {
-            return true;
-          }
-          return false;
-        });
-        
-        if (matchedNode) {
-          resolvedAddress = matchedNode.wallet || matchedNode.address || '';
-          console.log(`✅ Matched node: ${nodeId} -> ${resolvedAddress}`);
-        } else {
-          console.warn(`⚠️ No address found for nodeId: ${nodeId}`);
-        }
-      }
-
-      if (!resolvedAddress) {
-        resolvedAddress = nodeId;
-        console.log(`🔄 Using nodeId as address: ${resolvedAddress}`);
-      }
-
       const nodeDetails: NodeDetails = {
         id: nodeId,
-        address: resolvedAddress,
+        address: nodeAddress || '',
         status: undefined,
         mining: undefined,
         cooldown: undefined,
@@ -383,72 +344,77 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
         log: undefined,
       };
 
-      setNodeDetails({...nodeDetails});
-
       const loadData = async (): Promise<NodeDetails> => {
-        const isUsingAddressAsNodeId = nodeId === resolvedAddress;
-        console.log(`🔧 API calls: nodeId=${nodeId}, resolvedAddress=${resolvedAddress}, isUsingAddressAsNodeId=${isUsingAddressAsNodeId}`);
-        
-        const apiCalls = [
-          { key: 'status', call: () => isUsingAddressAsNodeId ? Promise.resolve(null) : NetrumAPI.getPollingNodeStats(nodeId) },
-          { key: 'mining', call: () => isUsingAddressAsNodeId ? Promise.resolve(null) : NetrumAPI.getMiningStatus(nodeId) },
-          { key: 'cooldown', call: () => isUsingAddressAsNodeId ? Promise.resolve(null) : NetrumAPI.getCooldown(nodeId) },
-          { key: 'claim', call: () => NetrumAPI.getClaimStatus(resolvedAddress) },
-          { key: 'log', call: () => NetrumAPI.getLiveLog(resolvedAddress) },
-        ];
-
-        let hasTimeoutError = false;
-        
         const updatedNodeDetails = { ...nodeDetails };
         const updatedLoadingStatus = { ...loadingStatus };
+        
+        const apiCalls = [
+          { key: 'status', call: () => NetrumAPI.getPollingNodeStats(nodeId) },
+          { key: 'mining', call: () => NetrumAPI.getMiningStatus(nodeId) },
+          { key: 'cooldown', call: () => NetrumAPI.getCooldown(nodeId) },
+          
+          ...(nodeAddress ? [
+            { key: 'claim', call: () => NetrumAPI.getClaimStatus(nodeAddress) },
+            { key: 'log', call: () => NetrumAPI.getLiveLog(nodeAddress) }
+          ] : [])
+        ];
         
         for (const item of apiCalls) {
           updatedLoadingStatus[item.key as keyof LoadingStatus] = true;
         }
         setLoadingStatus(updatedLoadingStatus);
         
-        for (const item of apiCalls) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          let retryCount = 0;
-          const maxRetries = 2;
-          let success = false;
-          
-          while (retryCount <= maxRetries && !success) {
-            try {
-              const result = await item.call();
-              updatedNodeDetails[item.key as keyof NodeDetails] = result;
-              updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
-              success = true;
+        const promises = apiCalls.map(async (item) => {
+          try {
+            const result = await item.call();
+            
+            if (item.key === 'status' && result && result.wallet && !nodeAddress) {
+              const resolvedAddress = result.wallet;
+              console.log(`✅ Found wallet address from node stats: ${resolvedAddress}`);
+              updatedNodeDetails.address = resolvedAddress;
               
-              setNodeDetails({ ...updatedNodeDetails });
-              setLoadingStatus({ ...updatedLoadingStatus });
-            } catch (err: any) {
-              console.error(`Failed to load ${item.key} (attempt ${retryCount + 1}/${maxRetries + 1}):`, err);
+              const walletApiCalls = [
+                { key: 'claim', call: () => NetrumAPI.getClaimStatus(resolvedAddress) },
+                { key: 'log', call: () => NetrumAPI.getLiveLog(resolvedAddress) }
+              ];
               
-              if (retryCount < maxRetries && err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
-                console.log(`🔄 Retrying ${item.key} in 2 seconds...`);
-                retryCount++;
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                continue;
-              }
+              const walletPromises = walletApiCalls.map(async (walletItem) => {
+                try {
+                  updatedLoadingStatus[walletItem.key as keyof LoadingStatus] = true;
+                  setLoadingStatus({ ...updatedLoadingStatus });
+                  
+                  const walletResult = await walletItem.call();
+                  updatedNodeDetails[walletItem.key as keyof NodeDetails] = walletResult;
+                  updatedLoadingStatus[walletItem.key as keyof LoadingStatus] = false;
+                  
+                  setNodeDetails({ ...updatedNodeDetails });
+                  setLoadingStatus({ ...updatedLoadingStatus });
+                } catch (err: any) {
+                  console.error(`Error loading ${walletItem.key}:`, err);
+                  updatedLoadingStatus[walletItem.key as keyof LoadingStatus] = false;
+                  setLoadingStatus({ ...updatedLoadingStatus });
+                }
+              });
               
-              if (item.key === 'id' || item.key === 'address') {
-              } else {
-                updatedNodeDetails[item.key as keyof NodeDetails] = null as any;
-              }
-              updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
-
-              setNodeDetails({ ...updatedNodeDetails });
-              setLoadingStatus({ ...updatedLoadingStatus });
-              
-              if (err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
-                hasTimeoutError = true;
-              }
-              break;
+              await Promise.all(walletPromises);
             }
+            
+            updatedNodeDetails[item.key as keyof NodeDetails] = result;
+            updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
+            
+            setNodeDetails({ ...updatedNodeDetails });
+            setLoadingStatus({ ...updatedLoadingStatus });
+            
+            return { key: item.key, success: true, result };
+          } catch (err: any) {
+            console.error(`Error loading ${item.key}:`, err);
+            updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
+            setLoadingStatus({ ...updatedLoadingStatus });
+            return { key: item.key, success: false, error: err };
           }
-        }
+        });
+        
+        await Promise.all(promises);
         
         return updatedNodeDetails;
       };
@@ -465,76 +431,94 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
 
   const loadAddressDetails = async (nodeAddress: string): Promise<NodeDetails> => {
     try {
-      const possibleNodeIds = await findPossibleNodeIds(nodeAddress);
-      console.log(`🔍 Searching for nodeId for address: ${nodeAddress}, found: ${possibleNodeIds.length} possible IDs`);
-      
-      if (possibleNodeIds.length > 0) {
-        const nodeId = possibleNodeIds[0];
-        console.log(`✅ Using nodeId: ${nodeId} for address: ${nodeAddress}`);
-        return await loadNodeDetails(nodeId, nodeAddress);
-      } else {
-        console.log(`⚠️ No nodeId found for address: ${nodeAddress}, using address as nodeId`);
-        const nodeDetails: NodeDetails = {
-          id: nodeAddress,
-          address: nodeAddress,
-          status: undefined,
-          mining: undefined,
-          cooldown: undefined,
-          claim: undefined,
-          log: undefined,
-        };
+      console.log(`🔍 Loading address details for: ${nodeAddress}`);
 
-        setNodeDetails({...nodeDetails});
+      const nodeDetails: NodeDetails = {
+        id: '',
+        address: nodeAddress,
+        status: undefined,
+        mining: undefined,
+        cooldown: undefined,
+        claim: undefined,
+        log: undefined,
+      };
 
-        const loadData = async () => {
-          const apiCalls = [
-            { key: 'claim', call: () => NetrumAPI.getClaimStatus(nodeAddress) },
-            { key: 'log', call: () => NetrumAPI.getLiveLog(nodeAddress) },
-          ];
-
-          let hasTimeoutError = false;
+      const loadData = async (): Promise<NodeDetails> => {
+        const updatedNodeDetails = { ...nodeDetails };
+        const updatedLoadingStatus = { ...loadingStatus };
+        
+        const apiCalls = [
+          { key: 'claim', call: () => NetrumAPI.getClaimStatus(nodeAddress) },
+          { key: 'log', call: () => NetrumAPI.getLiveLog(nodeAddress) },
           
-          for (const item of apiCalls) {
-            setLoadingStatus(prev => ({ ...prev, [item.key]: true }));
+          { key: 'claimHistory', call: () => NetrumAPI.getClaimHistory(nodeAddress) }
+        ];
+        
+        for (const item of apiCalls) {
+          updatedLoadingStatus[item.key as keyof LoadingStatus] = true;
+        }
+        setLoadingStatus(updatedLoadingStatus);
+        
+        const promises = apiCalls.map(async (item) => {
+          try {
+            const result = await item.call();
             
-            let retryCount = 0;
-            const maxRetries = 2;
-            let success = false;
-            
-            while (retryCount <= maxRetries && !success) {
-              try {
-                const result = await item.call();
-                nodeDetails[item.key as keyof NodeDetails] = result;
-                setNodeDetails({...nodeDetails});
-                success = true;
-              } catch (err: any) {
-                console.error(`Failed to load ${item.key} (attempt ${retryCount + 1}/${maxRetries + 1}):`, err);
-                
-                if (retryCount < maxRetries && err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
-                  console.log(`🔄 Retrying ${item.key} in 2 seconds...`);
-                  retryCount++;
-                  await new Promise(resolve => setTimeout(resolve, 2000));
-                  continue;
+            if (item.key === 'claimHistory' && result && result.lastClaim && result.lastClaim.nodeId) {
+              const resolvedNodeId = result.lastClaim.nodeId;
+              console.log(`✅ Found nodeId from claim history: ${resolvedNodeId}`);
+              updatedNodeDetails.id = resolvedNodeId;
+              
+              const nodeIdApiCalls = [
+                { key: 'status', call: () => NetrumAPI.getPollingNodeStats(resolvedNodeId) },
+                { key: 'mining', call: () => NetrumAPI.getMiningStatus(resolvedNodeId) },
+                { key: 'cooldown', call: () => NetrumAPI.getCooldown(resolvedNodeId) }
+              ];
+              
+              const nodeIdPromises = nodeIdApiCalls.map(async (nodeItem) => {
+                try {
+                  updatedLoadingStatus[nodeItem.key as keyof LoadingStatus] = true;
+                  setLoadingStatus({ ...updatedLoadingStatus });
+                  
+                  const nodeResult = await nodeItem.call();
+                  updatedNodeDetails[nodeItem.key as keyof NodeDetails] = nodeResult;
+                  updatedLoadingStatus[nodeItem.key as keyof LoadingStatus] = false;
+                  
+                  setNodeDetails({ ...updatedNodeDetails });
+                  setLoadingStatus({ ...updatedLoadingStatus });
+                } catch (err: any) {
+                  console.error(`Error loading ${nodeItem.key}:`, err);
+                  updatedLoadingStatus[nodeItem.key as keyof LoadingStatus] = false;
+                  setLoadingStatus({ ...updatedLoadingStatus });
                 }
-                
-                if (!success && err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
-                  hasTimeoutError = true;
-                }
-                break;
-              }
+              });
+              
+              await Promise.all(nodeIdPromises);
             }
             
-            setLoadingStatus(prev => ({ ...prev, [item.key]: false }));
+            if (item.key !== 'claimHistory') {
+              updatedNodeDetails[item.key as keyof NodeDetails] = result;
+            }
+            
+            updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
+            setNodeDetails({ ...updatedNodeDetails });
+            setLoadingStatus({ ...updatedLoadingStatus });
+            
+            return { key: item.key, success: true, result };
+          } catch (err: any) {
+            console.error(`Error loading ${item.key}:`, err);
+            updatedLoadingStatus[item.key as keyof LoadingStatus] = false;
+            setLoadingStatus({ ...updatedLoadingStatus });
+            return { key: item.key, success: false, error: err };
           }
-          
-          if (hasTimeoutError) {
-            throw new Error('Request timeout: Some data could not be loaded due to server timeout');
-          }
-        };
+        });
+        
+        await Promise.all(promises);
+        
+        return updatedNodeDetails;
+      };
 
-        await loadData();
-        return nodeDetails;
-      }
+      const finalData = await loadData();
+      return finalData;
     } catch (err: any) {
       if (err.message && (err.message.includes('timeout') || err.message.includes('Server took too long'))) {
         throw err;
@@ -545,116 +529,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
     }
   };
 
-  const findPossibleNodeIds = async (nodeAddress: string): Promise<string[]> => {
-    const possibleIds: string[] = [];
-    
-    try {
-      const getGlobalCache = (key: string) => {
-        try {
-          const cached = localStorage.getItem(key);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (parsed && Date.now() - parsed.timestamp < 30000) {
-              return parsed;
-            }
-          }
-        } catch (error) {
-        }
-        return null;
-      };
-      
-      const globalCacheKey = 'active_nodes';
-      const globalCache = getGlobalCache(globalCacheKey);
-      
-      let searchNodes: any[] = [];
-      
-      if (globalCache) {
-        const cachedData = globalCache.data;
-        if (Array.isArray(cachedData)) {
-          searchNodes = cachedData;
-        } else if (cachedData && cachedData.nodes && Array.isArray(cachedData.nodes)) {
-          searchNodes = cachedData.nodes;
-        } else if (cachedData && cachedData.data && Array.isArray(cachedData.data)) {
-          searchNodes = cachedData.data;
-        }
-      }
-      
-      if (searchNodes.length === 0) {
-        const activeNodes = await NetrumAPI.getActiveNodes();
-        if (Array.isArray(activeNodes)) {
-          searchNodes = activeNodes;
-        } else if (activeNodes && activeNodes.nodes && Array.isArray(activeNodes.nodes)) {
-          searchNodes = activeNodes.nodes;
-        } else if (activeNodes && activeNodes.data && Array.isArray(activeNodes.data)) {
-          searchNodes = activeNodes.data;
-        }
-      }
-      
-      console.log(`🔍 Searching for address: ${nodeAddress} in ${searchNodes.length} nodes`);
-      
-      const matchedNodes = searchNodes.filter(node => {
-        const nodeWallet = node.wallet || node.address;
-        const match = nodeWallet && nodeWallet.toLowerCase() === nodeAddress.toLowerCase();
-        if (match) {
-          console.log(`✅ Found match: nodeWallet=${nodeWallet}, nodeId=${node.nodeId}, id=${node.id}`);
-        }
-        return match;
-      });
-      
-      matchedNodes.forEach(node => {
-        if (node.nodeId && !possibleIds.includes(node.nodeId)) {
-          possibleIds.push(node.nodeId);
-          console.log(`➕ Added nodeId: ${node.nodeId}`);
-        }
-        if (node.id && node.id !== node.nodeId && !possibleIds.includes(node.id)) {
-          possibleIds.push(node.id);
-          console.log(`➕ Added id: ${node.id}`);
-        }
-      });
 
-      if (possibleIds.length === 0) {
-        console.log(`🔍 No exact match found, trying case-insensitive match`);
-        const caseInsensitiveMatches = searchNodes.filter(node => {
-          const nodeWallet = node.wallet || node.address;
-          return nodeWallet && nodeWallet.toLowerCase() === nodeAddress.toLowerCase();
-        });
-        
-        caseInsensitiveMatches.forEach(node => {
-          if (node.nodeId && !possibleIds.includes(node.nodeId)) {
-            possibleIds.push(node.nodeId);
-            console.log(`➕ Added case-insensitive match nodeId: ${node.nodeId}`);
-          }
-          if (node.id && node.id !== node.nodeId && !possibleIds.includes(node.id)) {
-            possibleIds.push(node.id);
-            console.log(`➕ Added case-insensitive match id: ${node.id}`);
-          }
-        });
-      }
-
-      if (possibleIds.length === 0) {
-        console.log(`🔍 No case-insensitive match found, trying checksum address match`);
-        const checksumAddress = nodeAddress.toLowerCase();
-        const checksumMatches = searchNodes.filter(node => {
-          const nodeWallet = node.wallet || node.address;
-          return nodeWallet && nodeWallet.toLowerCase() === checksumAddress;
-        });
-        
-        checksumMatches.forEach(node => {
-          if (node.nodeId && !possibleIds.includes(node.nodeId)) {
-            possibleIds.push(node.nodeId);
-            console.log(`➕ Added checksum match nodeId: ${node.nodeId}`);
-          }
-          if (node.id && node.id !== node.nodeId && !possibleIds.includes(node.id)) {
-            possibleIds.push(node.id);
-            console.log(`➕ Added checksum match id: ${node.id}`);
-          }
-        });
-      }
-    } catch (error) {
-    }
-    
-    return possibleIds;
-  };
 
   const closeNodeDetails = () => {
     setNodeDetails(null);
@@ -675,7 +550,7 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
               onChange={(e) => setInput(e.target.value)}
               onFocus={() => setShowHistory(true)}
               onBlur={() => setTimeout(() => setShowHistory(false), 200)}
-              placeholder="Enter Node ID (netrum.lite.node-abc123.base.eth) or Wallet Address"
+              placeholder="Enter Node ID or Wallet Address"
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
               disabled={loading}
             />
@@ -726,22 +601,6 @@ export default function NodeSearch({ initialSearchValue = '' }: NodeSearchProps)
           </div>
         )}
       </div>
-      
-      {error && (
-        <div className="mt-4 px-4 py-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span>{error}</span>
-            <button 
-              onClick={() => setError(null)} 
-              className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-      
-
       
       {(nodeDetails || loading || isUpdating) && (
         <div className="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">

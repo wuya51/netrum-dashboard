@@ -22,6 +22,7 @@ export default function HomePage() {
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
   const [registrationStatus, setRegistrationStatus] = useState<any>(null)
   const [registrationLoading, setRegistrationLoading] = useState(true)
+const [apiConnectionStatus, setApiConnectionStatus] = useState<'online' | 'offline' | 'checking'>('checking')
   const handleNodeClick = (address: string) => {
     console.log('Node clicked with address:', address)
     const params = new URLSearchParams(searchParams.toString())
@@ -78,27 +79,114 @@ export default function HomePage() {
     }
   }, [error, clearError])
 
-  useEffect(() => {
-    loadNetworkOverview()
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        loadNetworkOverview()
-      }, 300_000)
-      return () => clearInterval(interval)
+  const checkApiConnection = async () => {
+    try {
+      if (!navigator.onLine) {
+        setApiConnectionStatus('offline')
+        return false
+      }
+      if (apiConnectionStatus !== 'checking') {
+        setApiConnectionStatus('checking')
+      }
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      
+      try {
+        const response = await fetch('https://node.netrumlabs.dev/', {
+          signal: controller.signal,
+          method: 'HEAD'
+        })
+        clearTimeout(timeoutId)
+        
+        if (response.ok) {
+          setApiConnectionStatus('online')
+          return true
+        } else {
+          setApiConnectionStatus('online')
+          return false
+        }
+      } catch (error) {
+        clearTimeout(timeoutId)
+
+        if (error instanceof Error && error.name === 'AbortError') {
+          setApiConnectionStatus('online')
+        } else {
+          setApiConnectionStatus('offline')
+        }
+        return false
+      }
+    } catch (error) {
+      console.error('API connection check failed:', error)
+      return false
     }
-  }, [loadNetworkOverview, autoRefresh])
+  }
+
+  const handleOnline = () => {
+    console.log('🌐 Browser is online, checking API connection...')
+    setApiConnectionStatus('checking')
+    checkApiConnection()
+  }
+
+  const handleOffline = () => {
+    console.log('📵 Browser is offline')
+    setApiConnectionStatus('offline')
+  }
 
   useEffect(() => {
-    const loadRegistrationStatus = async () => {
+    checkApiConnection()
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    const apiCheckInterval = setInterval(() => {
+      if (navigator.onLine) {
+        checkApiConnection()
+      }
+    }, 30000)
+    
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+      clearInterval(apiCheckInterval)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (apiConnectionStatus === 'online') {
+      loadNetworkOverview()
+      if (autoRefresh) {
+        const interval = setInterval(() => {
+          loadNetworkOverview()
+        }, 300_000)
+        return () => clearInterval(interval)
+      }
+    }
+  }, [loadNetworkOverview, autoRefresh, apiConnectionStatus])
+
+  useEffect(() => {
+    const loadRegistrationStatus = async (retryCount = 0) => {
+      const maxRetries = 3
+      
       try {
         setRegistrationLoading(true)
         const status = await NetrumAPI.getRegistrationStatus()
         setRegistrationStatus(status)
       } catch (error) {
         console.error('Failed to load registration status:', error)
+        
+        if (error instanceof Error && error.message.includes('timeout') && retryCount < maxRetries) {
+          console.log(`Retrying registration status load... (${retryCount + 1}/${maxRetries})`)
+          setTimeout(() => {
+            loadRegistrationStatus(retryCount + 1)
+          }, 2000) 
+          return
+        }
+        
         setRegistrationStatus(null)
       } finally {
-        setRegistrationLoading(false)
+        if (retryCount >= maxRetries) {
+          setRegistrationLoading(false)
+        }
       }
     }
 
@@ -112,7 +200,35 @@ export default function HomePage() {
           <div className="flex items-center space-x-4">
             <a href="/" className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity">
               <img src="/logo.png" alt="Netrum Logo" className="h-8 w-8" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Netrum Node Dashboard</h1>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Netrum Node Dashboard</h1>
+                <div 
+                  className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium cursor-help ${
+                    apiConnectionStatus === 'online' 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                      : apiConnectionStatus === 'offline'
+                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' 
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  }`}
+                  title={apiConnectionStatus === 'online' 
+                ? 'Network and API server connection normal' 
+                : apiConnectionStatus === 'offline' 
+                ? 'Network connection interrupted, please check network settings' 
+                : 'Checking network connection status...'
+              }
+                >
+                  <div className={`w-2 h-2 rounded-full ${
+                    apiConnectionStatus === 'online' ? 'bg-green-500' 
+                    : apiConnectionStatus === 'offline' ? 'bg-red-500' 
+                    : 'bg-yellow-500 animate-pulse'
+                  }`}></div>
+                  <span>
+                    {apiConnectionStatus === 'online' ? 'Online' 
+                     : apiConnectionStatus === 'offline' ? 'Offline' 
+                     : 'Checking...'}
+                  </span>
+                </div>
+              </div>
             </a>
           </div>
           <div className="mt-4 md:mt-0 flex flex-wrap justify-end items-center gap-2 md:gap-4">
