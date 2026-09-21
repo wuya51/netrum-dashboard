@@ -34,9 +34,15 @@ export default function MiningLeaderboard() {
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
       <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          NPT Holder Leaderboard
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            NPT Holder Leaderboard
+          </h3>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            Live
+          </span>
+        </div>
         <button
           onClick={refresh}
           disabled={loadingLeaderboard}
@@ -64,7 +70,7 @@ export default function MiningLeaderboard() {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/50 text-left">
                 <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">#</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Address / ENS</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Wallet</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase text-right">NPT Balance</th>
               </tr>
             </thead>
@@ -84,15 +90,8 @@ export default function MiningLeaderboard() {
                       {entry.rank}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-300" title={entry.wallet}>
-                    {entry.ensName ? (
-                      <span>
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">{entry.ensName}</span>
-                        <span className="font-mono text-gray-400 dark:text-gray-500 ml-2">{formatWallet(entry.wallet)}</span>
-                      </span>
-                    ) : (
-                      <span className="font-mono">{formatWallet(entry.wallet)}</span>
-                    )}
+                  <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-300">
+                    <span className="font-mono" title={entry.wallet}>{formatWallet(entry.wallet)}</span>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-right font-semibold text-blue-600 dark:text-blue-400">
                     {formatBalance(entry.balance)}
