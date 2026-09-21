@@ -17,14 +17,10 @@ function formatPercent(pct: number): string {
   return pct.toFixed(2) + '%';
 }
 
-function formatTime(seconds: number): string {
-  if (!seconds || seconds <= 0) return '0s';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+function formatBalance(npt: number): string {
+  if (npt >= 1_000_000) return (npt / 1_000_000).toFixed(2) + 'M NPT';
+  if (npt >= 1_000) return (npt / 1_000).toFixed(2) + 'K NPT';
+  return npt.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' NPT';
 }
 
 export default function NodeSearch() {
@@ -159,10 +155,8 @@ export default function NodeSearch() {
               <div className="text-xl font-bold text-gray-900 dark:text-white">{formatMined(result.minedNPT || 0)}</div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Time Remaining</div>
-              <div className="text-xl font-bold text-gray-900 dark:text-white">
-                {formatTime(result.timeRemaining || 0)}
-              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Token Balance</div>
+              <div className="text-xl font-bold text-gray-900 dark:text-white">{formatBalance(result.tokenBalance || 0)}</div>
             </div>
           </div>
         </div>

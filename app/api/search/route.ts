@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createPublicClient, http, parseAbi } from 'viem';
+import { base } from 'viem/chains';
 import { lookupEnsReverse } from '../../../src/utils/ensLookup';
 
 export const dynamic = 'force-dynamic';
+
+const TOKEN_ADDRESS = '0xb8c2ce84f831175136cebbfd48ce4bab9c7a6424';
+const tokenAbi = parseAbi(['function balanceOf(address) view returns (uint256)']);
+
+const rpcClient = createPublicClient({
+  chain: base,
+  transport: http('https://base-rpc.publicnode.com', { timeout: 10000 }),
+});
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://lite-agent.netrumlabs.dev';
 
@@ -157,6 +167,19 @@ export async function GET(request: NextRequest) {
     const mined = parseMined(liveInfo.minedTokens);
     const percent = parsePercent(liveInfo.percentComplete);
 
+    let tokenBalance = 0;
+    if (wallet) {
+      try {
+        const balanceResult = await rpcClient.readContract({
+          address: TOKEN_ADDRESS as `0x${string}`,
+          abi: tokenAbi,
+          functionName: 'balanceOf',
+          args: [wallet as `0x${string}`],
+        });
+        tokenBalance = Number(balanceResult) / 1e18;
+      } catch { /* balance lookup optional */ }
+    }
+
     return NextResponse.json({
       success: true,
       nodeId: nodeId || '',
@@ -169,7 +192,7 @@ export async function GET(request: NextRequest) {
       minedNPT: mined,
       percentComplete: liveInfo.percentComplete,
       percentNPT: percent,
-      timeRemaining: parseFloat(liveInfo.timeRemaining) || 0,
+      tokenBalance,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Search failed';

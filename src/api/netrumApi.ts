@@ -10,7 +10,7 @@ export interface MiningResult {
   minedNPT?: number;
   percentComplete?: string;
   percentNPT?: number;
-  timeRemaining?: number;
+  tokenBalance?: number;
   message?: string;
 }
 
