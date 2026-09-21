@@ -10,7 +10,7 @@ function formatBalance(npt: number): string {
 }
 
 export default function MiningLeaderboard() {
-  const { leaderboard, loadingLeaderboard, leaderboardError, loadLeaderboard } = useDashboardStore();
+  const { leaderboard, loadingLeaderboard, leaderboardError, loadLeaderboard, search } = useDashboardStore();
   const hasLoadedRef = useRef(false);
 
   const refresh = useCallback(() => {
@@ -86,7 +86,12 @@ export default function MiningLeaderboard() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-300">
-                    <span className="font-mono break-all">{entry.wallet}</span>
+                    <button
+                      onClick={() => search(entry.wallet)}
+                      className="font-mono break-all text-left hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors cursor-pointer"
+                    >
+                      {entry.wallet}
+                    </button>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-right font-semibold text-blue-600 dark:text-blue-400">
                     {formatBalance(entry.balance)}
