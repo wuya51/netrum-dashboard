@@ -13,11 +13,6 @@ function formatMined(npt: number): string {
   return npt.toFixed(8) + ' NPT';
 }
 
-function formatWallet(w: string): string {
-  if (!w) return 'N/A';
-  return w.slice(0, 6) + '...' + w.slice(-4);
-}
-
 function formatPercent(pct: number): string {
   return pct.toFixed(2) + '%';
 }
@@ -125,29 +120,31 @@ export default function NodeSearch() {
 
       {result && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-              <div className="text-xs text-blue-600 dark:text-blue-400">Node ID</div>
-              <div className="text-sm font-mono text-blue-800 dark:text-blue-200 mt-1 truncate" title={result.nodeId}>
-                {result.nodeId || formatWallet(result.wallet || '') || 'N/A'}
+          <div className="space-y-3 mb-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+              <div className="text-xs text-blue-600 dark:text-blue-400 mb-1">Node ID</div>
+              <div className="text-sm font-mono text-blue-800 dark:text-blue-200 break-all">
+                {result.nodeId || 'N/A'}
               </div>
             </div>
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
-              <div className="text-xs text-green-600 dark:text-green-400">Wallet</div>
-              <div className="text-sm font-mono text-green-800 dark:text-green-200 mt-1" title={result.wallet}>
-                {formatWallet(result.wallet || '')}
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+              <div className="text-xs text-green-600 dark:text-green-400 mb-1">Wallet</div>
+              <div className="text-sm font-mono text-green-800 dark:text-green-200 break-all">
+                {result.wallet || 'N/A'}
               </div>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center">
-              <div className="text-xs text-purple-600 dark:text-purple-400">Status</div>
-              <div className={`text-sm font-semibold mt-1 ${result.isActive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {result.isActive ? 'Active' : 'Inactive'}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 text-center">
+                <div className="text-xs text-purple-600 dark:text-purple-400">Status</div>
+                <div className={`text-sm font-semibold mt-1 ${result.isActive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {result.isActive ? 'Active' : 'Inactive'}
+                </div>
               </div>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 text-center">
-              <div className="text-xs text-orange-600 dark:text-orange-400">Progress</div>
-              <div className="text-sm font-semibold text-orange-700 dark:text-orange-300 mt-1">
-                {formatPercent(result.percentNPT || 0)}
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 text-center">
+                <div className="text-xs text-orange-600 dark:text-orange-400">Progress</div>
+                <div className="text-sm font-semibold text-orange-700 dark:text-orange-300 mt-1">
+                  {formatPercent(result.percentNPT || 0)}
+                </div>
               </div>
             </div>
           </div>

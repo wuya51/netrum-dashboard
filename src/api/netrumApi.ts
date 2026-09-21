@@ -16,17 +16,16 @@ export interface MiningResult {
 
 export interface LeaderboardEntry {
   rank: number;
-  nodeId: string;
   wallet: string;
-  speedNPT: number;
-  minedNPT: number;
-  isActive: boolean;
+  balance: number;
+  ensName: string | null;
 }
 
 export interface LeaderboardResponse {
   success: boolean;
   message?: string;
   leaderboard: LeaderboardEntry[];
+  totalHolders?: number;
 }
 
 export const NetrumAPI = {

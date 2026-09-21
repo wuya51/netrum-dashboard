@@ -2,107 +2,73 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://lite-agent.netrumlabs.dev';
+const BLOCKSCOUT_API = 'https://base.blockscout.com/api/v2';
+const CONTRACT_ADDRESS = '0xb8c2ce84f831175136cebbfd48ce4bab9c7a6424';
+const DECIMALS = 18;
 
-interface OldNodeItem {
-  nodeId?: string;
-  id?: string;
-  wallet?: string;
-  address?: string;
-  nodeStatus?: string;
-  status?: string;
-}
-
-interface MiningDebugResponse {
-  success: boolean;
-  contract?: {
-    liveInfo?: {
-      speedPerSec: string;
-      minedTokens: string;
-      isActive: boolean;
-      percentComplete: string;
-    };
+interface HolderItem {
+  address: {
+    hash: string;
+    ens_domain_name: string | null;
   };
+  value: string;
 }
 
-function parseSpeed(speedPerSec: string): number {
-  try {
-    return parseInt(speedPerSec) / 1e18;
-  } catch {
-    return 0;
-  }
+interface HoldersResponse {
+  items: HolderItem[];
+  next_page_params: {
+    value: string;
+    address_hash: string;
+    items_count: number;
+  } | null;
 }
 
-function parseMined(minedTokens: string): number {
-  try {
-    return parseInt(minedTokens) / 1e18;
-  } catch {
-    return 0;
-  }
-}
+async function fetchAllHolders(): Promise<HolderItem[]> {
+  const allHolders: HolderItem[] = [];
+  let url: string | null = `${BLOCKSCOUT_API}/tokens/${CONTRACT_ADDRESS}/holders`;
 
-async function fetchAPI(path: string): Promise<unknown> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Accept': 'application/json' },
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+  while (url && allHolders.length < 100) {
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = (await res.json()) as HoldersResponse;
+    allHolders.push(...data.items);
+
+    if (data.next_page_params) {
+      const { value, address_hash } = data.next_page_params;
+      url = `${BLOCKSCOUT_API}/tokens/${CONTRACT_ADDRESS}/holders?value=${value}&address_hash=${address_hash}`;
+    } else {
+      url = null;
+    }
   }
-  return res.json();
+
+  return allHolders;
 }
 
 export async function GET() {
   try {
-    let nodes: OldNodeItem[] = [];
+    const holders = await fetchAllHolders();
 
-    try {
-      const res = await fetch('https://node-agent.netrumlabs.dev/lite/nodes/active', {
-        headers: { 'Accept': 'application/json' },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        nodes = Array.isArray(data) ? data : [];
-      }
-    } catch {
-      return NextResponse.json({
-        success: false,
-        message: 'Leaderboard temporarily unavailable (works after Vercel deploy)',
-        leaderboard: [],
-      });
+    if (holders.length === 0) {
+      return NextResponse.json({ success: true, leaderboard: [], totalHolders: 0 });
     }
 
-    if (nodes.length === 0) {
-      return NextResponse.json({ success: true, leaderboard: [] });
-    }
+    const leaderboard = holders.map((item, index) => ({
+      rank: index + 1,
+      wallet: item.address.hash,
+      balance: parseInt(item.value) / Math.pow(10, DECIMALS),
+      ensName: item.address.ens_domain_name || null,
+    }));
 
-    const speedPromises = nodes.slice(0, 30).map(async (node) => {
-      const id = node.nodeId || node.id || '';
-      const wallet = node.wallet || node.address || '';
-      try {
-        const mining = await fetchAPI(`/user/mining/debug/${wallet}`) as MiningDebugResponse;
-        const liveInfo = mining?.contract?.liveInfo;
-        if (liveInfo && liveInfo.isActive) {
-          return {
-            nodeId: id,
-            wallet,
-            speedNPT: parseSpeed(liveInfo.speedPerSec),
-            minedNPT: parseMined(liveInfo.minedTokens),
-            isActive: liveInfo.isActive,
-          };
-        }
-      } catch {
-        // skip nodes that fail
-      }
-      return null;
-    });
-
-    const speeds = (await Promise.all(speedPromises)).filter(Boolean);
-    const ranked = speeds
-      .sort((a, b) => (b?.speedNPT || 0) - (a?.speedNPT || 0))
-      .map((s, i) => ({ ...s, rank: i + 1 }));
-
-    return NextResponse.json({ success: true, leaderboard: ranked });
+    return NextResponse.json({ success: true, leaderboard, totalHolders: holders.length });
   } catch {
-    return NextResponse.json({ success: false, message: '加载失败', leaderboard: [] });
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to load holder data, please try again later',
+      leaderboard: [],
+    });
   }
 }

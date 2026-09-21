@@ -3,25 +3,15 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 
-function formatSpeed(npt: number): string {
-  return npt.toFixed(6) + ' NPT/sec';
-}
-
-function formatMined(npt: number): string {
-  if (npt >= 1) return npt.toFixed(4) + ' NPT';
-  if (npt >= 0.001) return (npt * 1000).toFixed(4) + ' mNPT';
-  return npt.toFixed(6) + ' NPT';
+function formatBalance(npt: number): string {
+  if (npt >= 1_000_000) return (npt / 1_000_000).toFixed(2) + 'M NPT';
+  if (npt >= 1_000) return (npt / 1_000).toFixed(2) + 'K NPT';
+  return npt.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' NPT';
 }
 
 function formatWallet(w: string): string {
   if (!w) return 'N/A';
   return w.slice(0, 6) + '...' + w.slice(-4);
-}
-
-function formatNodeId(id: string): string {
-  if (!id) return 'N/A';
-  if (id.length <= 14) return id;
-  return id.slice(0, 8) + '...' + id.slice(-6);
 }
 
 export default function MiningLeaderboard() {
@@ -45,7 +35,7 @@ export default function MiningLeaderboard() {
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
       <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          NPT Mining Leaderboard
+          NPT Holder Leaderboard
         </h3>
         <button
           onClick={refresh}
@@ -64,7 +54,7 @@ export default function MiningLeaderboard() {
       ) : leaderboardError ? (
         <div className="text-center p-8 text-gray-400">
           <p className="mb-2">{leaderboardError}</p>
-          <p className="text-xs">Leaderboard will be available after deploying to Vercel</p>
+          <p className="text-xs">Please try again later</p>
         </div>
       ) : leaderboard.length === 0 ? (
         <div className="text-center p-8 text-gray-500">No data available</div>
@@ -74,16 +64,14 @@ export default function MiningLeaderboard() {
             <thead>
               <tr className="bg-gray-50 dark:bg-gray-700/50 text-left">
                 <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">#</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Node</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Wallet</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase text-right">Speed</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase text-right">Mined</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Address / ENS</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase text-right">NPT Balance</th>
               </tr>
             </thead>
             <tbody>
               {leaderboard.map((entry) => (
                 <tr
-                  key={entry.nodeId}
+                  key={entry.wallet + entry.rank}
                   className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30"
                 >
                   <td className="px-4 py-3">
@@ -96,17 +84,18 @@ export default function MiningLeaderboard() {
                       {entry.rank}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300" title={entry.nodeId}>
-                    {formatNodeId(entry.nodeId)}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300" title={entry.wallet}>
-                    {formatWallet(entry.wallet)}
+                  <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-300" title={entry.wallet}>
+                    {entry.ensName ? (
+                      <span>
+                        <span className="text-blue-600 dark:text-blue-400 font-medium">{entry.ensName}</span>
+                        <span className="font-mono text-gray-400 dark:text-gray-500 ml-2">{formatWallet(entry.wallet)}</span>
+                      </span>
+                    ) : (
+                      <span className="font-mono">{formatWallet(entry.wallet)}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-right font-semibold text-blue-600 dark:text-blue-400">
-                    {formatSpeed(entry.speedNPT)}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-right text-gray-700 dark:text-gray-300">
-                    {formatMined(entry.minedNPT)}
+                    {formatBalance(entry.balance)}
                   </td>
                 </tr>
               ))}
