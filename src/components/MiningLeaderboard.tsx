@@ -9,11 +9,6 @@ function formatBalance(npt: number): string {
   return npt.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' NPT';
 }
 
-function formatWallet(w: string): string {
-  if (!w) return 'N/A';
-  return w.slice(0, 6) + '...' + w.slice(-4);
-}
-
 export default function MiningLeaderboard() {
   const { leaderboard, loadingLeaderboard, leaderboardError, loadLeaderboard } = useDashboardStore();
   const hasLoadedRef = useRef(false);
@@ -91,7 +86,7 @@ export default function MiningLeaderboard() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-700 dark:text-gray-300">
-                    <span className="font-mono" title={entry.wallet}>{formatWallet(entry.wallet)}</span>
+                    <span className="font-mono break-all">{entry.wallet}</span>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-right font-semibold text-blue-600 dark:text-blue-400">
                     {formatBalance(entry.balance)}
