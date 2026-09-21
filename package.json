@@ -13,6 +13,7 @@
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.6.0",
+    "viem": "^2.56.8",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

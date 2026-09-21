@@ -1,100 +1,58 @@
-# Netrum Node Dashboard
+# Netrum Dashboard
 
-A comprehensive web-based dashboard for monitoring and managing Netrum network nodes, built with Next.js. This application provides real-time insights into node statistics, mining status, cooldown periods, and network health.
-
-## 🌐 Official Website
-**https://www.netrum123.xyz**
-
-## 🚀 Built with Next.js
-
-This project is developed using **Next.js 14+** with the modern App Router architecture, providing:
-- **Server-Side Rendering (SSR)** for optimal SEO and performance
-- **Static Site Generation (SSG)** capabilities
-- **API Routes** for backend functionality
-- **File-based Routing** with App Router
-- **Built-in Optimization** for images, fonts, and scripts
+A dashboard for monitoring Netrum NPT mining nodes — check mining speed, view mining progress, and browse the NPT leaderboard by Node ID or wallet address.
 
 ## Features
 
-### 🔍 Node Search & Monitoring
-- **Search by Wallet Address or Node ID**: Quickly find any node using wallet addresses or node identifiers
-- **Real-time Data Display**: View comprehensive node information including:
-  - Identity details
-  - Node statistics (task count, RAM usage, status)
-  - Mining status and token information
-  - Claim status and requirements
-  - Cooldown periods
-  - Live log data
+- **Node Search** — Search by Node ID (e.g. `netrum.lite.name.base.eth`) or wallet address (`0x...`) to view real-time mining status
+- **NPT Leaderboard** — Browse active mining nodes ranked by mining speed
+- **Auto Resolution** — Short names like `name.base.eth` auto-resolve to `netrum.lite.name.base.eth`
+- **ENS Reverse Lookup** — Automatically resolves wallet addresses to `.base.eth` domain names via Base chain ENS CCIP-Read
 
-### 📊 Active Nodes Overview
-- **Interactive Node List**: Browse all active nodes in the network
-- **Click-to-Search Functionality**: Click any node in the list to instantly search its details
-- **Smart Cooldown Management**: 30-second cooldown period after searches to prevent spam
-- **Adaptive Popup Display**: Hover over nodes to see detailed information without leaving the page
+## Tech Stack
 
-### 🌐 Network Status
-- **Service Health Monitoring**: Real-time status of Netrum network services
-- **Registration Status**: Display network information and contract addresses
-- **Auto-refresh Capability**: Configurable automatic data refresh every 5 minutes
+- [Next.js 14](https://nextjs.org/) (App Router)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Zustand](https://zustand-demo.pmnd.rs/) — State management
+- [Viem](https://viem.sh/) — ENS reverse resolution on Base chain
+- [Recharts](https://recharts.org/) — Charts (leaderboard)
 
-### 🎯 Next.js App Router Features
-- **URL Parameter Handling**: Seamless search via URL parameters
-- **Client-side Navigation**: Smooth transitions between searches
-- **State Management**: React hooks with custom store pattern
-- **Error Boundaries**: Graceful error handling and recovery
-
-## Installation & Setup
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn package manager
-- Modern web browser with JavaScript enabled
-
-### Quick Start
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/wuya51/netrum-dashboard.git
-   cd netrum-dashboard
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. **Run Development Server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-4. **Access the Application**
-   Open your browser and navigate to:
-   ```
-   http://localhost:3030
-   ```
-
-### Next.js Development Commands
+## Getting Started
 
 ```bash
-# Development server with hot reload
+# Install dependencies
+npm install
+
+# Configure API base URL
+echo 'NEXT_PUBLIC_API_BASE=https://lite-agent.netrumlabs.dev' > .env.local
+
+# Start dev server
 npm run dev
-
-# Production build
-npm run build
-
-# Start production server
-npm start
-
-# Lint code
-npm run lint
-
-# Type checking
-npm run type-check
 ```
 
-## Project Structure (Next.js App Router)
+Open [http://localhost:3030](http://localhost:3030) in your browser.
+
+## Deploy to Vercel
+
+1. Push this repo to GitHub
+2. Import the repo in [Vercel](https://vercel.com)
+3. Add environment variable: `NEXT_PUBLIC_API_BASE=https://lite-agent.netrumlabs.dev`
+4. Deploy
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_BASE` | Netrum Lite Agent API base URL | `https://lite-agent.netrumlabs.dev` |
+
+## API Routes
+
+All external API calls go through Next.js API routes (proxy) to avoid CORS issues:
+
+- `GET /api/search?q=<nodeId or wallet>` — Search node mining status
+- `GET /api/leaderboard` — Fetch NPT mining leaderboard
+
+## License
+
+MIT
