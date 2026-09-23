@@ -143,7 +143,7 @@ export default function MiningLeaderboard() {
                     className="border-b border-slate-700/20 hover:bg-slate-700/40 transition-colors group"
                   >
                     <td className="px-5 py-3.5">
-                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold ${getRankStyle(entry.rank)}`}>
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-bold ${getRankStyle(entry.rank)} ${rankIcon ? 'text-base' : 'text-xs'}`}>
                         {rankIcon || entry.rank}
                       </span>
                     </td>
