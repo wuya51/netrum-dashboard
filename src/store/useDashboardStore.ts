@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { NetrumAPI, MiningResult, LeaderboardEntry } from '../api/netrumApi';
+import { saveAddressMapping, getNodeIdByAddress } from '../utils/addressMapping';
 
 interface DashboardState {
   result: MiningResult | null;
@@ -11,6 +12,7 @@ interface DashboardState {
   leaderboardError: string | null;
 
   search: (query: string) => Promise<void>;
+  setSearchQuery: (query: string) => void;
   loadLeaderboard: () => Promise<void>;
   clearError: () => void;
 }
@@ -26,11 +28,26 @@ export const useDashboardStore = create<DashboardState>((set) => ({
 
   clearError: () => set({ error: null }),
 
+  setSearchQuery: (query: string) => set({ searchQuery: query }),
+
   search: async (query: string) => {
-    set({ loading: true, error: null, result: null, searchQuery: query });
+    const trimmed = query.trim();
+    set({ loading: true, error: null, result: null, searchQuery: trimmed });
+
+    let searchQuery = trimmed;
+    if (trimmed.startsWith('0x')) {
+      const cachedNodeId = getNodeIdByAddress(trimmed);
+      if (cachedNodeId) {
+        searchQuery = cachedNodeId;
+      }
+    }
+
     try {
-      const data = await NetrumAPI.search(query);
+      const data = await NetrumAPI.search(searchQuery);
       if (data.success) {
+        if (data.wallet && data.nodeId) {
+          saveAddressMapping(data.wallet, data.nodeId);
+        }
         set({ result: data, loading: false });
       } else {
         set({ error: data.message || 'No data found', loading: false, result: null });
@@ -45,6 +62,11 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     try {
       const data = await NetrumAPI.getLeaderboard();
       if (data.success) {
+        for (const entry of data.leaderboard) {
+          if (entry.ensName) {
+            saveAddressMapping(entry.wallet, entry.ensName);
+          }
+        }
         set({ leaderboard: data.leaderboard, loadingLeaderboard: false });
       } else {
         set({ leaderboardError: data.message || 'Failed to load leaderboard', loadingLeaderboard: false });
