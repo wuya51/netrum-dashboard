@@ -15,15 +15,17 @@ function shortenAddress(addr: string): string {
   return addr.slice(0, 6) + '...' + addr.slice(-4);
 }
 
-function getDisplayName(entry: { wallet: string; ensName: string | null }): { primary: string; secondary: string } {
-  const cachedNodeId = getNodeIdByAddress(entry.wallet);
+function getDisplayName(entry: { wallet: string; ensName: string | null }): { primary: string; secondary: string; shortAddress: string; isAddress: boolean } {
+  const shortAddr = shortenAddress(entry.wallet);
+  const fullAddr = entry.wallet;
+  const cachedNodeId = getNodeIdByAddress(fullAddr);
   if (cachedNodeId) {
-    return { primary: cachedNodeId, secondary: shortenAddress(entry.wallet) };
+    return { primary: cachedNodeId, secondary: fullAddr, shortAddress: shortAddr, isAddress: false };
   }
   if (entry.ensName) {
-    return { primary: entry.ensName, secondary: shortenAddress(entry.wallet) };
+    return { primary: entry.ensName, secondary: fullAddr, shortAddress: shortAddr, isAddress: false };
   }
-  return { primary: shortenAddress(entry.wallet), secondary: '' };
+  return { primary: fullAddr, secondary: '', shortAddress: shortAddr, isAddress: true };
 }
 
 function getRankStyle(rank: number): string {
@@ -151,11 +153,19 @@ export default function MiningLeaderboard() {
                         className="text-left hover:opacity-80 transition-opacity"
                       >
                         <div className="text-sm text-slate-200 font-medium group-hover:text-indigo-300 transition-colors">
-                          {display.primary}
+                          {display.isAddress ? (
+                            <>
+                              <span className="hidden md:inline">{display.primary}</span>
+                              <span className="md:hidden">{display.shortAddress}</span>
+                            </>
+                          ) : (
+                            display.primary
+                          )}
                         </div>
                         {display.secondary && (
                           <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                            {display.secondary}
+                            <span className="hidden md:inline">{display.secondary}</span>
+                            <span className="md:hidden">{display.shortAddress}</span>
                           </div>
                         )}
                       </button>
