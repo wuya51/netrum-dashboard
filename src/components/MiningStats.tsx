@@ -77,7 +77,7 @@ export default function MiningStats() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
           {[
             { label: 'Total Supply', value: '250M' },
-            { label: 'Testnet Allocation', value: '5M' },
+            { label: 'Testnet Allocation', value: formatNPT(TESTNET_ALLOCATION) },
             { label: 'Full Nodes', value: '25%' },
             { label: 'Lite Nodes', value: '10%' },
           ].map((item) => (
