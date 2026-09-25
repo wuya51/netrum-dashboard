@@ -16,7 +16,7 @@ export async function GET() {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ success: false, onlineNodes: 0, totalNodes: 0 });
+      return NextResponse.json({ success: false, onlineNodes: 0, totalNodes: 0, error: `node-agent returned ${res.status}` });
     }
 
     const nodes = (await res.json()) as ActiveNode[];
@@ -27,7 +27,8 @@ export async function GET() {
       onlineNodes,
       totalNodes: onlineNodes,
     });
-  } catch {
-    return NextResponse.json({ success: false, onlineNodes: 0, totalNodes: 0 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ success: false, onlineNodes: 0, totalNodes: 0, error: message });
   }
 }

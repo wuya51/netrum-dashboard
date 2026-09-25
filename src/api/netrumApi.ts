@@ -34,6 +34,7 @@ export interface NodeStats {
   success: boolean;
   onlineNodes: number;
   totalNodes: number;
+  error?: string;
 }
 
 export const NetrumAPI = {
