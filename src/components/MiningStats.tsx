@@ -92,7 +92,7 @@ export default function MiningStats() {
           <div className="text-[10px] uppercase tracking-wider text-indigo-400 mb-2 font-medium">Upcoming</div>
           <ul className="space-y-1.5 text-xs text-slate-400">
             <li className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse mt-1.5 shrink-0" />
+              <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse mt-[3px] shrink-0" />
               NPT not yet listed on exchanges — currently Lite v4
             </li>
             <li className="flex items-start gap-2">
