@@ -7,6 +7,8 @@ interface DashboardState {
   searchQuery: string;
   leaderboard: LeaderboardEntry[];
   totalSupply: number;
+  totalMiner: number | null;
+  miningSpeed: number | null;
   loading: boolean;
   loadingLeaderboard: boolean;
   error: string | null;
@@ -15,6 +17,7 @@ interface DashboardState {
   search: (query: string) => Promise<void>;
   setSearchQuery: (query: string) => void;
   loadLeaderboard: () => Promise<void>;
+  loadNetworkStats: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -23,6 +26,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   searchQuery: '',
   leaderboard: [],
   totalSupply: 0,
+  totalMiner: null,
+  miningSpeed: null,
   loading: false,
   loadingLeaderboard: false,
   error: null,
@@ -75,6 +80,31 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       }
     } catch {
       set({ leaderboardError: 'Failed to load leaderboard', loadingLeaderboard: false });
+    }
+  },
+
+  loadNetworkStats: async () => {
+    try {
+      const [minerRes, speedRes] = await Promise.all([
+        NetrumAPI.getTotalMiner(),
+        NetrumAPI.getMiningSpeed(),
+      ]);
+
+      let totalMiner: number | null = null;
+      let miningSpeed: number | null = null;
+
+      if (minerRes.success && minerRes.data !== undefined) {
+        const d = minerRes.data as Record<string, unknown>;
+        totalMiner = typeof d === 'number' ? d : (d.totalMiner ?? d.count ?? d.total) as number | null ?? null;
+      }
+      if (speedRes.success && speedRes.data !== undefined) {
+        const d = speedRes.data as Record<string, unknown>;
+        miningSpeed = typeof d === 'number' ? d : (d.miningSpeed ?? d.speed ?? d.value) as number | null ?? null;
+      }
+
+      set({ totalMiner, miningSpeed });
+    } catch {
+      // silently ignore network stats errors
     }
   },
 }));

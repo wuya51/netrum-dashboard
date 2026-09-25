@@ -24,14 +24,6 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          <a
-            href="https://lite-agent.netrumlabs.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-slate-500 hover:text-indigo-400 transition-colors"
-          >
-            lite-agent.netrumlabs.dev
-          </a>
         </div>
       </header>
 
@@ -43,7 +35,7 @@ export default function HomePage() {
 
       <footer className="relative py-6 text-center">
         <p className="text-xs text-slate-600">
-          Powered by <span className="text-slate-500">lite-agent.netrumlabs.dev</span>
+          Powered by <span className="text-slate-500">Netrum Network</span>
         </p>
       </footer>
     </div>

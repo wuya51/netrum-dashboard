@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 
 const TOTAL_SUPPLY = 250_000_000;
@@ -13,7 +14,12 @@ function formatNPT(n: number): string {
 }
 
 export default function MiningStats() {
-  const { totalSupply } = useDashboardStore();
+  const { totalSupply, totalMiner, miningSpeed } = useDashboardStore();
+  const loadNetworkStats = useDashboardStore((s) => s.loadNetworkStats);
+
+  useEffect(() => {
+    loadNetworkStats();
+  }, [loadNetworkStats]);
 
   const mined = totalSupply;
   const dexProgress = Math.min((mined / DEX_THRESHOLD) * 100, 100);
@@ -36,6 +42,37 @@ export default function MiningStats() {
       </div>
 
       <div className="p-5 space-y-5">
+        {(totalMiner !== null || miningSpeed !== null) && (
+          <div className="grid grid-cols-2 gap-3">
+            {totalMiner !== null && (
+              <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-blue-400 font-medium">Active Miners</div>
+                  <div className="text-lg font-bold text-blue-300">{totalMiner.toLocaleString()}</div>
+                </div>
+              </div>
+            )}
+            {miningSpeed !== null && (
+              <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-emerald-400 font-medium">Mining Speed</div>
+                  <div className="text-lg font-bold text-emerald-300">{formatNPT(miningSpeed)} NPT/s</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <div className="flex justify-between items-end mb-2">
             <span className="text-sm text-slate-400">Total Mined</span>

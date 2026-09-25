@@ -40,4 +40,14 @@ export const NetrumAPI = {
     const res = await fetch('/api/leaderboard');
     return res.json();
   },
+
+  getTotalMiner: async (): Promise<{ success: boolean; data?: unknown }> => {
+    const res = await fetch('/api/totalminer');
+    return res.json();
+  },
+
+  getMiningSpeed: async (): Promise<{ success: boolean; data?: unknown }> => {
+    const res = await fetch('/api/miningspeed');
+    return res.json();
+  },
 };
