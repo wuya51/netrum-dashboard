@@ -58,7 +58,7 @@ export default function MiningStats() {
 
         <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-amber-400">DEX Launch Threshold</span>
+            <span className="text-xs font-medium text-amber-400">Netrum DEX Launch</span>
             <span className="text-xs text-slate-500">
               {formatNPT(mined)} / {formatNPT(DEX_THRESHOLD)} NPT
             </span>
@@ -92,16 +92,16 @@ export default function MiningStats() {
           <div className="text-[10px] uppercase tracking-wider text-indigo-400 mb-2 font-medium">Upcoming</div>
           <ul className="space-y-1.5 text-xs text-slate-400">
             <li className="flex items-start gap-2">
+              <span className="text-green-400 mt-0.5">&#9679;</span>
+              NPT not yet listed on exchanges — currently Lite v4
+            </li>
+            <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">&#9679;</span>
               3 testnet phases will mint 30% of total supply
             </li>
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">&#9679;</span>
               New activities, testnets, and full node releases coming soon
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-indigo-400 mt-0.5">&#9679;</span>
-              NPT not yet listed on exchanges — currently Lite v4
             </li>
           </ul>
         </div>
