@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import NodeSearch from '../src/components/NodeSearch';
+import MiningStats from '../src/components/MiningStats';
 import MiningLeaderboard from '../src/components/MiningLeaderboard';
 
 export default function HomePage() {
@@ -36,6 +37,7 @@ export default function HomePage() {
 
       <main className="relative max-w-5xl mx-auto px-4 py-8 space-y-6">
         <NodeSearch />
+        <MiningStats />
         <MiningLeaderboard />
       </main>
 

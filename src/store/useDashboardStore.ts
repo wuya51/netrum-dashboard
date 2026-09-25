@@ -6,6 +6,7 @@ interface DashboardState {
   result: MiningResult | null;
   searchQuery: string;
   leaderboard: LeaderboardEntry[];
+  totalSupply: number;
   loading: boolean;
   loadingLeaderboard: boolean;
   error: string | null;
@@ -21,6 +22,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   result: null,
   searchQuery: '',
   leaderboard: [],
+  totalSupply: 0,
   loading: false,
   loadingLeaderboard: false,
   error: null,
@@ -67,7 +69,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
             saveAddressMapping(entry.wallet, entry.ensName);
           }
         }
-        set({ leaderboard: data.leaderboard, loadingLeaderboard: false });
+        set({ leaderboard: data.leaderboard, totalSupply: data.totalSupply || 0, loadingLeaderboard: false });
       } else {
         set({ leaderboardError: data.message || 'Failed to load leaderboard', loadingLeaderboard: false });
       }

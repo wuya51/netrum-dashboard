@@ -9,7 +9,10 @@ const CONTRACT_ADDRESS = '0xb8c2ce84f831175136cebbfd48ce4bab9c7a6424';
 const DECIMALS = 18;
 const MAX_HOLDERS = 50;
 
-const tokenAbi = parseAbi(['function balanceOf(address) view returns (uint256)']);
+const tokenAbi = parseAbi([
+  'function balanceOf(address) view returns (uint256)',
+  'function totalSupply() view returns (uint256)',
+]);
 
 const rpcClient = createPublicClient({
   chain: base,
@@ -96,10 +99,21 @@ export async function GET() {
       ensName: item.ensName,
     }));
 
+    let totalSupply = 0;
+    try {
+      const ts = await rpcClient.readContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: tokenAbi,
+        functionName: 'totalSupply',
+      });
+      totalSupply = Number(ts) / Math.pow(10, DECIMALS);
+    } catch { /* ignore */ }
+
     return NextResponse.json({
       success: true,
       leaderboard,
       totalHolders: leaderboard.length,
+      totalSupply,
       source: 'realtime',
     });
   } catch {

@@ -26,6 +26,7 @@ export interface LeaderboardResponse {
   message?: string;
   leaderboard: LeaderboardEntry[];
   totalHolders?: number;
+  totalSupply?: number;
 }
 
 export const NetrumAPI = {
