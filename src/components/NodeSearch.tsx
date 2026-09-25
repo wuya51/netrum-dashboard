@@ -159,22 +159,23 @@ export default function NodeSearch() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
             <div className="bg-slate-700/40 border border-slate-600/30 rounded-xl p-4 text-center group hover:bg-slate-700/60 transition-colors">
-              <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 font-medium">Status</div>
-              <div className={`text-sm font-bold mt-0.5 flex items-center justify-center gap-1.5 ${result.isActive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                <span className={`w-2 h-2 rounded-full ${result.isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-                {result.isActive ? 'Active' : 'Inactive'}
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 font-medium">Node</div>
+              <div className={`text-sm font-bold mt-0.5 flex items-center justify-center gap-1.5 ${result.isOnline ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <span className={`w-2 h-2 rounded-full ${result.isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                {result.isOnline ? 'Online' : 'Offline'}
+              </div>
+            </div>
+            <div className="bg-slate-700/40 border border-slate-600/30 rounded-xl p-4 text-center group hover:bg-slate-700/60 transition-colors">
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 font-medium">Mining</div>
+              <div className={`text-sm font-bold mt-0.5 flex items-center justify-center gap-1.5 ${result.isActive ? 'text-amber-400' : 'text-slate-500'}`}>
+                <span className={`w-2 h-2 rounded-full ${result.isActive ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'}`} />
+                {result.isActive ? 'Active' : 'Idle'}
               </div>
             </div>
             <div className="bg-slate-700/40 border border-slate-600/30 rounded-xl p-4 text-center group hover:bg-slate-700/60 transition-colors">
               <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 font-medium">Progress</div>
               <div className="text-sm font-bold text-amber-300 mt-0.5">
                 {formatPercent(result.percentNPT || 0)}
-              </div>
-            </div>
-            <div className="bg-slate-700/40 border border-slate-600/30 rounded-xl p-4 text-center group hover:bg-slate-700/60 transition-colors">
-              <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1.5 font-medium">Node Status</div>
-              <div className="text-sm font-bold text-violet-300 mt-0.5">
-                {result.nodeStatus || 'Unknown'}
               </div>
             </div>
             <div className="bg-slate-700/40 border border-slate-600/30 rounded-xl p-4 text-center group hover:bg-slate-700/60 transition-colors">

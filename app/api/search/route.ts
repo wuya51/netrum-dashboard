@@ -87,25 +87,24 @@ export async function GET(request: NextRequest) {
     let wallet: string;
     let nodeId: string;
     let nodeStatus = '';
+    let isOnline = false;
+
+    const activeNodes = await fetch('https://node-agent.netrumlabs.dev/lite/nodes/active', {
+      headers: { 'Accept': 'application/json' },
+    }).then((r) => (r.ok ? r.json() as Promise<Array<{ nodeId?: string; id?: string; wallet?: string; address?: string }>> : Promise.resolve([])))
+      .catch(() => [] as Array<{ nodeId?: string; id?: string; wallet?: string; address?: string }>);
 
     if (isWallet) {
       wallet = query;
       nodeId = '';
 
-      try {
-        const nodesRes = await fetch('https://node-agent.netrumlabs.dev/lite/nodes/active', {
-          headers: { 'Accept': 'application/json' },
-        });
-        if (nodesRes.ok) {
-          const nodes = (await nodesRes.json()) as Array<{ nodeId?: string; id?: string; wallet?: string; address?: string }>;
-          const found = nodes.find(
-            (n) => (n.wallet || n.address || '').toLowerCase() === wallet.toLowerCase()
-          );
-          if (found) {
-            nodeId = found.nodeId || found.id || '';
-          }
-        }
-      } catch { /* SSL on Windows, works on Vercel */ }
+      const found = activeNodes.find(
+        (n) => (n.wallet || n.address || '').toLowerCase() === wallet.toLowerCase()
+      );
+      if (found) {
+        nodeId = found.nodeId || found.id || '';
+        isOnline = true;
+      }
 
       if (!nodeId) {
         try {
@@ -149,6 +148,11 @@ export async function GET(request: NextRequest) {
       wallet = nodeStats.stats.wallet;
       nodeId = nodeStats.nodeId || resolvedId;
       nodeStatus = nodeStats.stats.nodeStatus || '';
+
+      const foundInActive = activeNodes.find(
+        (n) => (n.wallet || n.address || '').toLowerCase() === wallet.toLowerCase()
+      );
+      isOnline = !!foundInActive || nodeStatus.toLowerCase().includes('active');
     }
 
     let miningData: MiningDebugResponse | null = null;
@@ -186,6 +190,7 @@ export async function GET(request: NextRequest) {
       wallet,
       nodeStatus,
       isActive: liveInfo.isActive,
+      isOnline,
       speedPerSec: liveInfo.speedPerSec,
       speedNPT: speed,
       minedTokens: liveInfo.minedTokens,
