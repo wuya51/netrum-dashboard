@@ -10,7 +10,6 @@ function formatSpeed(npt: number): string {
 
 function formatMined(npt: number): string {
   if (npt >= 1) return npt.toFixed(6) + ' NPT';
-  if (npt >= 0.001) return (npt * 1000).toFixed(4) + ' mNPT';
   return npt.toFixed(8) + ' NPT';
 }
 
