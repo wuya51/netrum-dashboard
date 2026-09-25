@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 
 const TOTAL_SUPPLY = 250_000_000;
@@ -14,17 +13,7 @@ function formatNPT(n: number): string {
 }
 
 export default function MiningStats() {
-  const { totalSupply, nodeStats, loadNodeStats } = useDashboardStore();
-  const hasLoadedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      loadNodeStats();
-    }
-    const t = setInterval(loadNodeStats, 60000);
-    return () => clearInterval(t);
-  }, [loadNodeStats]);
+  const { totalSupply } = useDashboardStore();
 
   const mined = totalSupply;
   const dexProgress = Math.min((mined / DEX_THRESHOLD) * 100, 100);
@@ -97,21 +86,6 @@ export default function MiningStats() {
               <div className="text-sm font-bold text-slate-200">{item.value}</div>
             </div>
           ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4">
-            <div className="text-[10px] uppercase tracking-wider text-emerald-400 mb-1 font-medium">Active Nodes</div>
-            <div className="text-2xl font-bold text-emerald-300">
-              {nodeStats ? nodeStats.onlineNodes.toLocaleString() : '-'}
-            </div>
-          </div>
-          <div className="bg-slate-700/30 border border-slate-600/30 rounded-xl p-4">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1 font-medium">Total Nodes</div>
-            <div className="text-2xl font-bold text-slate-300">
-              {nodeStats ? nodeStats.totalNodes.toLocaleString() : '-'}
-            </div>
-          </div>
         </div>
 
         <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-4">

@@ -30,13 +30,6 @@ export interface LeaderboardResponse {
   totalSupply?: number;
 }
 
-export interface NodeStats {
-  success: boolean;
-  onlineNodes: number;
-  totalNodes: number;
-  error?: string;
-}
-
 export const NetrumAPI = {
   search: async (query: string): Promise<MiningResult> => {
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -45,11 +38,6 @@ export const NetrumAPI = {
 
   getLeaderboard: async (): Promise<LeaderboardResponse> => {
     const res = await fetch('/api/leaderboard');
-    return res.json();
-  },
-
-  getNodeStats: async (): Promise<NodeStats> => {
-    const res = await fetch('/api/stats');
     return res.json();
   },
 };

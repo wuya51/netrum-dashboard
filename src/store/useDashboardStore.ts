@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { NetrumAPI, MiningResult, LeaderboardEntry, NodeStats } from '../api/netrumApi';
+import { NetrumAPI, MiningResult, LeaderboardEntry } from '../api/netrumApi';
 import { saveAddressMapping, getNodeIdByAddress } from '../utils/addressMapping';
 
 interface DashboardState {
@@ -7,7 +7,6 @@ interface DashboardState {
   searchQuery: string;
   leaderboard: LeaderboardEntry[];
   totalSupply: number;
-  nodeStats: NodeStats | null;
   loading: boolean;
   loadingLeaderboard: boolean;
   error: string | null;
@@ -16,7 +15,6 @@ interface DashboardState {
   search: (query: string) => Promise<void>;
   setSearchQuery: (query: string) => void;
   loadLeaderboard: () => Promise<void>;
-  loadNodeStats: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -25,7 +23,6 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   searchQuery: '',
   leaderboard: [],
   totalSupply: 0,
-  nodeStats: null,
   loading: false,
   loadingLeaderboard: false,
   error: null,
@@ -79,14 +76,5 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     } catch {
       set({ leaderboardError: 'Failed to load leaderboard', loadingLeaderboard: false });
     }
-  },
-
-  loadNodeStats: async () => {
-    try {
-      const data = await NetrumAPI.getNodeStats();
-      if (data.success) {
-        set({ nodeStats: data });
-      }
-    } catch { /* ignore */ }
   },
 }));
