@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import NodeSearch from '../src/components/NodeSearch';
 import MiningStats from '../src/components/MiningStats';
 import MiningLeaderboard from '../src/components/MiningLeaderboard';
+import HeaderStats from '../src/components/HeaderStats';
 
 export default function HomePage() {
   return (
@@ -24,6 +25,7 @@ export default function HomePage() {
               </p>
             </div>
           </div>
+          <HeaderStats />
         </div>
       </header>
 

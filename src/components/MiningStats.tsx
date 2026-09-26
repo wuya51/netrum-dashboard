@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 
 const TOTAL_SUPPLY = 250_000_000;
@@ -15,11 +14,6 @@ function formatNPT(n: number): string {
 
 export default function MiningStats() {
   const { totalSupply, totalMiner, miningSpeed } = useDashboardStore();
-  const loadNetworkStats = useDashboardStore((s) => s.loadNetworkStats);
-
-  useEffect(() => {
-    loadNetworkStats();
-  }, [loadNetworkStats]);
 
   const mined = totalSupply;
   const dexProgress = Math.min((mined / DEX_THRESHOLD) * 100, 100);
@@ -48,7 +42,7 @@ export default function MiningStats() {
               <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
                   <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.121 9.879L19 5m-7 7l-5.5 5.5M12 12l4.95-4.95M6.5 17.5l-4 4M21 3l-3.5 3.5M10 2v2m6 4h2M2 10h2m13 8h2M4.93 19.07l1.41 1.41" />
                   </svg>
                 </div>
                 <div className="min-w-0">
@@ -61,7 +55,8 @@ export default function MiningStats() {
               <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
                   <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41M12 7a5 5 0 110 10 5 5 0 010-10z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 12l3-1" />
                   </svg>
                 </div>
                 <div className="min-w-0">
