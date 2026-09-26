@@ -41,7 +41,10 @@ interface NodeStatsResponse {
 
 async function fetchAPI<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Accept': 'application/json' },
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'NetrumDashboard/1.0',
+    },
   });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
@@ -90,7 +93,10 @@ export async function GET(request: NextRequest) {
     let isOnline = false;
 
     const activeNodes = await fetch('https://node-agent.netrumlabs.dev/lite/nodes/active', {
-      headers: { 'Accept': 'application/json' },
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'NetrumDashboard/1.0',
+      },
     }).then((r) => (r.ok ? r.json() as Promise<Array<{ nodeId?: string; id?: string; wallet?: string; address?: string }>> : Promise.resolve([])))
       .catch(() => [] as Array<{ nodeId?: string; id?: string; wallet?: string; address?: string }>);
 
@@ -112,7 +118,10 @@ export async function GET(request: NextRequest) {
           if (ensName) {
             const candidateId = `netrum.lite.${ensName}`;
             const checkRes = await fetch(`${API_BASE}/user/task/node-stats/${encodeURIComponent(candidateId)}`, {
-              headers: { 'Accept': 'application/json' },
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'NetrumDashboard/1.0',
+              },
             });
             if (checkRes.ok) {
               const checkData = await checkRes.json() as NodeStatsResponse;

@@ -7,7 +7,10 @@ const TOTAL_MINER_API = 'https://node.netrumlabs.com/api/board/totalminer/';
 export async function GET() {
   try {
     const res = await fetch(TOTAL_MINER_API, {
-      headers: { 'Accept': 'application/json' },
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'NetrumDashboard/1.0',
+      },
     });
     if (!res.ok) {
       return NextResponse.json({ success: false, message: 'Failed to fetch total miner data' }, { status: res.status });
