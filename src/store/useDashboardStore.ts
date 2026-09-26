@@ -95,11 +95,14 @@ export const useDashboardStore = create<DashboardState>((set) => ({
 
       if (minerRes.success && minerRes.data !== undefined) {
         const d = minerRes.data as Record<string, unknown>;
-        totalMiner = typeof d === 'number' ? d : (d.totalMiner ?? d.count ?? d.total) as number | null ?? null;
+        totalMiner = typeof d === 'number' ? d : (d.totalMiners ?? d.totalMiner ?? d.count ?? d.total) as number | null ?? null;
       }
       if (speedRes.success && speedRes.data !== undefined) {
         const d = speedRes.data as Record<string, unknown>;
-        miningSpeed = typeof d === 'number' ? d : (d.miningSpeed ?? d.speed ?? d.value) as number | null ?? null;
+        miningSpeed = typeof d === 'number' ? d : (d.miningSpeedEthPerSec ?? d.miningSpeedWeiPerSec ?? d.miningSpeed ?? d.speed ?? d.value) as number | null ?? null;
+        if (miningSpeed !== null && typeof miningSpeed === 'string') {
+          miningSpeed = parseFloat(miningSpeed);
+        }
       }
 
       set({ totalMiner, miningSpeed });

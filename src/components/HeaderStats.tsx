@@ -6,7 +6,10 @@ import { useDashboardStore } from '../store/useDashboardStore';
 function formatSpeed(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(2) + 'K';
-  return n.toFixed(2);
+  if (n >= 1) return n.toFixed(4);
+  if (n >= 0.001) return (n * 1000).toFixed(2) + 'm';
+  if (n >= 0.000001) return (n * 1_000_000).toFixed(2) + 'µ';
+  return n.toExponential(2);
 }
 
 export default function HeaderStats() {
