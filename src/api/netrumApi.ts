@@ -42,12 +42,24 @@ export const NetrumAPI = {
   },
 
   getTotalMiner: async (): Promise<{ success: boolean; data?: unknown }> => {
-    const res = await fetch('/api/totalminer');
-    return res.json();
+    const res = await fetch('https://node.netrumlabs.com/api/board/totalminer/', {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) {
+      return { success: false };
+    }
+    const data = await res.json();
+    return { success: true, data };
   },
 
   getMiningSpeed: async (): Promise<{ success: boolean; data?: unknown }> => {
-    const res = await fetch('/api/miningspeed');
-    return res.json();
+    const res = await fetch('https://node.netrumlabs.com/api/board/miningSpeed/', {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) {
+      return { success: false };
+    }
+    const data = await res.json();
+    return { success: true, data };
   },
 };
