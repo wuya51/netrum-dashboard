@@ -70,7 +70,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
       const data = await NetrumAPI.getLeaderboard();
       if (data.success) {
         for (const entry of data.leaderboard) {
-          if (entry.ensName) {
+          if (entry.ensName && !getNodeIdByAddress(entry.wallet)) {
             saveAddressMapping(entry.wallet, entry.ensName);
           }
         }
