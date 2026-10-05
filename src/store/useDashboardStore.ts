@@ -52,7 +52,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     try {
       const data = await NetrumAPI.search(searchQuery);
       if (data.success) {
-        if (data.wallet && data.nodeId) {
+        if (data.wallet && data.nodeId && !getNodeIdByAddress(data.wallet)) {
           saveAddressMapping(data.wallet, data.nodeId);
         }
         set({ result: data, loading: false });

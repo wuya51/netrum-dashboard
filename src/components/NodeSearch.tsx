@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { saveAddressMapping, loadPreSeededMappings } from '../utils/addressMapping';
+import { saveAddressMapping, getNodeIdByAddress, loadPreSeededMappings } from '../utils/addressMapping';
 
 function formatSpeed(npt: number): string {
   return npt.toFixed(6) + ' NPT/sec';
@@ -56,7 +56,7 @@ export default function NodeSearch() {
   }, []);
 
   useEffect(() => {
-    if (result?.wallet && result?.nodeId) {
+    if (result?.wallet && result?.nodeId && !getNodeIdByAddress(result.wallet)) {
       saveAddressMapping(result.wallet, result.nodeId);
     }
   }, [result]);
