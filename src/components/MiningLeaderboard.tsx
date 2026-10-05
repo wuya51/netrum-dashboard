@@ -18,12 +18,12 @@ function shortenAddress(addr: string): string {
 function getDisplayName(entry: { wallet: string; ensName: string | null }): { primary: string; secondary: string; shortAddress: string; isAddress: boolean } {
   const shortAddr = shortenAddress(entry.wallet);
   const fullAddr = entry.wallet;
+  if (entry.ensName) {
+    return { primary: entry.ensName, secondary: fullAddr, shortAddress: shortAddr, isAddress: false };
+  }
   const cachedNodeId = getNodeIdByAddress(fullAddr);
   if (cachedNodeId) {
     return { primary: cachedNodeId, secondary: fullAddr, shortAddress: shortAddr, isAddress: false };
-  }
-  if (entry.ensName) {
-    return { primary: entry.ensName, secondary: fullAddr, shortAddress: shortAddr, isAddress: false };
   }
   return { primary: fullAddr, secondary: '', shortAddress: shortAddr, isAddress: true };
 }
